@@ -578,6 +578,85 @@ body {
 }
 
 /* ========================================
+   MOBILE GAME CONTROLS
+   Small pixel-style buttons in bottom corners, never block gameplay
+   ======================================== */
+.game-controls {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0; right: 0;
+  padding: 8px 16px;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 95;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.85);
+  border-top: 1px solid #1a3a1a;
+}
+@media (max-width: 700px), (pointer: coarse) {
+  .game-controls { display: flex; }
+}
+.ctrl-joystick {
+  display: flex;
+  gap: 6px;
+  pointer-events: none;
+}
+.ctrl-btn {
+  width: 40px; height: 40px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 255, 65, 0.35);
+  color: rgba(0, 255, 65, 0.7);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 2px;
+  transition: background 0.08s, border-color 0.08s;
+}
+.ctrl-btn:active, .ctrl-btn.pressed {
+  background: rgba(0, 255, 65, 0.15);
+  border-color: var(--green);
+  color: var(--green);
+}
+.ctrl-fire {
+  width: 44px; height: 44px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 176, 0, 0.4);
+  color: rgba(255, 176, 0, 0.7);
+  pointer-events: auto;
+  font-size: 8px;
+}
+.ctrl-fire:active, .ctrl-fire.pressed {
+  background: rgba(255, 176, 0, 0.15);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+/* Desktop controls hint */
+.controls-hint {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: rgba(0, 255, 65, 0.5);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 1;
+  transition: opacity 1.2s ease;
+}
+.controls-hint.fade-out { opacity: 0; }
+@media (max-width: 700px), (pointer: coarse) {
+  .controls-hint { display: none; }
+}
+
+/* ========================================
    GAME SCREEN — classic Space Invaders layout
    ======================================== */
 .game-screen {
@@ -642,31 +721,30 @@ body {
 /* ========================================
    RESPONSIVE
    ======================================== */
-/* Mobile play button — always visible on small screens */
-.mobile-play-btn {
-  display: none;
+/* PLAY button — always visible on all screen sizes, outside nav-links */
+.nav-play-btn {
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--amber);
+  text-decoration: none;
+  padding: 6px 10px;
+  border: 1px solid var(--amber-dim);
+  border-radius: 2px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-shadow: 0 0 8px var(--amber-dim);
+  transition: all 0.2s;
+  flex-shrink: 0;
 }
-@media (max-width: 700px) {
-  .mobile-play-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-family: var(--font-pixel);
-    font-size: 8px;
-    color: var(--amber);
-    text-decoration: none;
-    padding: 5px 10px;
-    border: 1px solid var(--amber-dim);
-    border-radius: 2px;
-    cursor: pointer;
-    text-shadow: 0 0 8px var(--amber-dim);
-  }
+.nav-play-btn:hover {
+  background: var(--amber-glow);
+  border-color: var(--amber);
 }
 
 @media (max-width: 700px) {
   .main-wrap { margin: 64px 8px 100px; padding: 16px 10px; }
   .nav-links { display: none; }
-  .nav-inner { justify-content: center; gap: 12px; }
+  .nav-inner { justify-content: space-between; gap: 8px; }
   .section-header { padding: 12px 14px; }
   .section-content { padding: 0 14px 14px; }
   .timeline-track { flex-direction: column; align-items: stretch; }
@@ -724,9 +802,8 @@ body {
       <li><a href="#" onclick="navToSection(event,'timeline')"><span class="nav-icon"></span>TIMELINE</a></li>
       <li><a href="#" onclick="showComingSoon(event, 'ANALYTICS')"><span class="nav-icon"></span>ANALYTICS</a></li>
       <li><a href="#" onclick="showComingSoon(event, 'SETTINGS')"><span class="nav-icon"></span>SETTINGS</a></li>
-      <li><a href="#" onclick="showGame(event)" style="color:var(--amber);border-color:var(--amber-dim);"><span class="nav-icon" style="border-color:var(--amber);"></span>PLAY</a></li>
     </ul>
-    <a class="mobile-play-btn" onclick="showGame(event)">▶ PLAY</a>
+    <a class="nav-play-btn" onclick="showGame(event)">▶ PLAY</a>
     <div class="score-display">SCORE <span id="score">0000</span></div>
   </div>
 </nav>
@@ -861,7 +938,7 @@ body {
             <span class="sub-title">AI Defensibility Assessment Criterium</span>
           </div>
           <div class="sub-body"><div class="sub-content">
-            <p>One of the harder but most important judgments in early-stage investing right now is determining exactly how defensible a company actually is in an AI-saturated market.  Furthermore, even if a company has a momentary competitive advantage, one needs to account for the possibility that it will be deemed obsolete with the next big genAI model release or breakthrough.  An assessment with a list of criteria should be produced to assess this risk, especially for software companies.  A few sample questions include: [add Qs] From there, a lightweight model could be built to assess a company's current AI adoption (or lack thereof) and identify whether their moat is real or illusory.  Given software alone carries essentially no IP protection (and "vibe coding" becoming increasingly more powerful), the risk of a small yet nimble competitor emerging and disrupting the scene is very real – making the more important factors limited to things like proprietary data integration, a unique network effect, vendor lock-in, or physical hardware.  In addition, the model would estimate an "MVP clone timeline" - essentially how long it would take a well-resourced competitor or a nimble startup to replicate the core product.  This could be a useful internal scoring rubric applied consistently across all inbound deals.</p>
+            <p>One of the harder but most important judgments in early-stage investing right now is determining exactly how defensible a company actually is in an AI-saturated market.  Furthermore, even if a company has a momentary competitive advantage, one needs to account for the possibility that it will be deemed obsolete with the next big genAI model release or breakthrough.  An assessment with a list of criteria should be produced to assess this risk, especially for software companies.  From there, a lightweight model could be built to assess a company's current AI adoption (or lack thereof) and identify whether their moat is real or illusory.  Given software alone carries essentially no IP protection (and "vibe coding" becoming increasingly more powerful), the risk of a small yet nimble competitor emerging and disrupting the scene is very real – making the more important factors limited to things like proprietary data integration, a unique network effect, vendor lock-in, or physical hardware.  In addition, the model would estimate an "MVP clone timeline" - essentially how long it would take a well-resourced competitor or a nimble startup to replicate the core product.  This could be a useful internal scoring rubric applied consistently across all inbound deals.</p>
           </div></div>
         </div>
       </div>
@@ -944,6 +1021,16 @@ body {
       <h2>EPV INVADERS</h2>
       <p>[ CLICK TO START ]</p>
     </div>
+    <!-- Desktop hint -->
+    <div class="controls-hint" id="controlsHint">ARROW KEYS TO MOVE &nbsp;·&nbsp; SPACEBAR TO FIRE</div>
+  </div>
+  <!-- Mobile joystick + fire — outside canvas, at bottom of screen -->
+  <div class="game-controls" id="gameControls">
+    <div class="ctrl-joystick">
+      <div class="ctrl-btn" id="btnLeft">&lt;</div>
+      <div class="ctrl-btn" id="btnRight">&gt;</div>
+    </div>
+    <div class="ctrl-btn ctrl-fire" id="btnFire">FIRE</div>
   </div>
 </div>
 
@@ -960,6 +1047,13 @@ function addScore() {
   score += 100;
   const el = document.getElementById('score');
   if (el) el.textContent = String(score).padStart(4, '0');
+}
+
+/* Sync game score into the top navbar score display */
+function syncScore(val) {
+  score = val;
+  const el = document.getElementById('score');
+  if (el) el.textContent = String(val).padStart(4, '0');
 }
 
 /* ----------------------------------------
@@ -1333,7 +1427,7 @@ function startGame() {
   document.addEventListener('keydown', onKeyDown);
   document.addEventListener('keyup', onKeyUp);
 
-  // Touch
+  // Touch (canvas drag still works too)
   let touchX = null;
   let touchActive = false;
   canvas.addEventListener('touchstart', e => {
@@ -1341,13 +1435,37 @@ function startGame() {
     const rect = canvas.getBoundingClientRect();
     touchX = (e.touches[0].clientX - rect.left) / rect.width * W;
     touchActive = true;
-  });
+  }, { passive: false });
   canvas.addEventListener('touchmove', e => {
     e.preventDefault();
     const rect = canvas.getBoundingClientRect();
     touchX = (e.touches[0].clientX - rect.left) / rect.width * W;
-  });
+  }, { passive: false });
   canvas.addEventListener('touchend', () => { touchX = null; touchActive = false; });
+
+  // Mobile button controls
+  const btnLeft  = document.getElementById('btnLeft');
+  const btnRight = document.getElementById('btnRight');
+  const btnFire  = document.getElementById('btnFire');
+  function addBtnListeners(btn, keyDown, keyUp) {
+    btn.addEventListener('touchstart', e => { e.preventDefault(); if(keyDown) keys[keyDown] = true; if(keyUp) keys[keyUp] = true; btn.classList.add('pressed'); }, { passive: false });
+    btn.addEventListener('touchend',   e => { e.preventDefault(); if(keyDown) keys[keyDown] = false; if(keyUp) keys[keyUp] = false; btn.classList.remove('pressed'); }, { passive: false });
+    btn.addEventListener('touchcancel',e => { e.preventDefault(); if(keyDown) keys[keyDown] = false; if(keyUp) keys[keyUp] = false; btn.classList.remove('pressed'); }, { passive: false });
+    // Mouse fallback for desktop testing
+    btn.addEventListener('mousedown', () => { if(keyDown) keys[keyDown] = true; if(keyUp) keys[keyUp] = true; });
+    btn.addEventListener('mouseup',   () => { if(keyDown) keys[keyDown] = false; if(keyUp) keys[keyUp] = false; });
+  }
+  addBtnListeners(btnLeft,  'ArrowLeft',  null);
+  addBtnListeners(btnRight, 'ArrowRight', null);
+  addBtnListeners(btnFire,  ' ',          null);
+
+  // Desktop controls hint — show for 3s then fade out
+  const hint = document.getElementById('controlsHint');
+  if (hint) {
+    hint.style.opacity = '1';
+    hint.classList.remove('fade-out');
+    setTimeout(() => hint.classList.add('fade-out'), 3000);
+  }
 
   // Player bullet (only 1 on screen at a time, like original)
   let playerBullet = null;
