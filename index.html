@@ -191,11 +191,15 @@ body {
   height: 52px;
 }
 .nav-brand {
-  font-family: var(--font-pixel);
-  font-size: 10px;
-  color: var(--green);
-  text-shadow: 0 0 10px var(--green-dark);
+  display: flex;
+  align-items: center;
   white-space: nowrap;
+}
+.nav-brand img {
+  height: 28px;
+  width: auto;
+  filter: brightness(0) saturate(100%) invert(70%) sepia(90%) saturate(600%) hue-rotate(85deg) brightness(1.1);
+  opacity: 0.9;
 }
 .nav-links {
   display: flex;
@@ -245,7 +249,7 @@ body {
    ======================================== */
 .main-wrap {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   max-width: 880px;
   margin: 80px auto 120px;
   padding: 30px 24px;
@@ -544,25 +548,33 @@ body {
   opacity: 0.9;
 }
 
-/* ========================================
-   FLOATING INVADERS
-   ======================================== */
-.invader {
-  position: fixed;
-  z-index: 0;
-  opacity: 0.08;
-  display: grid;
-  grid-template-columns: repeat(11, 4px);
-  gap: 1px;
-  animation: float-drift linear infinite;
-}
-.invader .px { width: 4px; height: 4px; background: var(--green); }
-.invader .px.off { background: transparent; }
 
-@keyframes float-drift {
-  0% { transform: translateY(0) translateX(0); }
-  50% { transform: translateY(-30px) translateX(15px); }
-  100% { transform: translateY(0) translateX(0); }
+/* ========================================
+   TOAST NOTIFICATION
+   ======================================== */
+.toast {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: var(--amber);
+  background: rgba(10, 10, 10, 0.95);
+  border: 1px solid var(--amber-dim);
+  padding: 12px 24px;
+  border-radius: 4px;
+  box-shadow: 0 0 20px var(--amber-glow);
+  z-index: 200;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  text-align: center;
+  white-space: nowrap;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 /* ========================================
@@ -648,8 +660,12 @@ body {
 <!-- Scanline overlay -->
 <div class="scanlines"></div>
 
+<!-- Toast notification for funny tab messages -->
+<div class="toast" id="toast"></div>
+
 <!-- Star canvas -->
 <canvas id="starfield"></canvas>
+
 
 <!-- ========================================
      SPLASH SCREEN
@@ -679,12 +695,14 @@ body {
      ======================================== -->
 <nav class="navbar" id="navbar" style="display:none;">
   <div class="nav-inner">
-    <div class="nav-brand">EPV//AI</div>
+    <a href="/" class="nav-brand" onclick="event.preventDefault();location.reload();"><img src="public/epvlogo.png" alt="Elysian Park Ventures"></a>
     <ul class="nav-links">
-      <li><a href="#internal"><span class="nav-icon"></span>INTERNAL</a></li>
-      <li><a href="#portfolio"><span class="nav-icon"></span>PORTFOLIO</a></li>
-      <li><a href="#agents"><span class="nav-icon"></span>AGENTS</a></li>
-      <li><a href="#timeline"><span class="nav-icon"></span>TIMELINE</a></li>
+      <li><a href="#" onclick="navToSection(event,'internal')"><span class="nav-icon"></span>INTERNAL</a></li>
+      <li><a href="#" onclick="navToSection(event,'portfolio')"><span class="nav-icon"></span>PORTFOLIO</a></li>
+      <li><a href="#" onclick="navToSection(event,'agents')"><span class="nav-icon"></span>AGENTS</a></li>
+      <li><a href="#" onclick="navToSection(event,'timeline')"><span class="nav-icon"></span>TIMELINE</a></li>
+      <li><a href="#" onclick="showComingSoon(event, 'ANALYTICS')"><span class="nav-icon"></span>ANALYTICS</a></li>
+      <li><a href="#" onclick="showComingSoon(event, 'SETTINGS')"><span class="nav-icon"></span>SETTINGS</a></li>
       <li><a href="#" onclick="showGame(event)" style="color:var(--amber);border-color:var(--amber-dim);"><span class="nav-icon" style="border-color:var(--amber);"></span>PLAY</a></li>
     </ul>
     <div class="score-display">SCORE <span id="score">0000</span></div>
@@ -739,10 +757,9 @@ body {
           </div>
           <div class="sub-body"><div class="sub-content">
             <p>Claude Cowork* is great for overall planning organization. For example, I give Claude access to my file tree and routinely have it filter everything into neat folders - including a suggested delete folder which I then manually delete.  In the future, I may trust Claude to delete files for me but for now I have it do all the work and essentially just do the last step.  Beyond building tools, a key goal is to help any EPV employee become genuinely proficient in using genAI tools in their day-to-day work, starting with accessible entry points like the Claude Excel* extension and Claude Cowork*, and progressing to Claude Code* / Codex / Antigravity for those who want to go deeper.</p>
+            <p class="footnote">* - Claude Opus 4.6 is the best model for these tasks currently, but this could be subject to change, of course.</p>
           </div></div>
         </div>
-
-        <p class="footnote">* - Claude Opus 4.6 is the best model for these tasks currently, but this could be subject to change, of course.</p>
 
         <div class="sub-section">
           <div class="sub-header" onclick="toggleSub(this, event)">
@@ -908,32 +925,6 @@ body {
   </div>
 </div>
 
-<!-- ========================================
-     FLOATING INVADERS (decorative)
-     ======================================== -->
-<div class="invader" style="top:15%;left:5%;animation-duration:18s;" aria-hidden="true">
-  <div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div>
-  <div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div>
-  <div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px off"></div>
-  <div class="px off"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px off"></div>
-  <div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div>
-</div>
-
-<div class="invader" style="top:55%;right:3%;animation-duration:22s;animation-delay:-6s;" aria-hidden="true">
-  <div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div>
-  <div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div>
-  <div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px off"></div>
-  <div class="px off"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px off"></div>
-  <div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div>
-</div>
-
-<div class="invader" style="top:80%;left:12%;animation-duration:25s;animation-delay:-10s;" aria-hidden="true">
-  <div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div>
-  <div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div>
-  <div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px off"></div>
-  <div class="px off"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px off"></div>
-  <div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div>
-</div>
 
 <!-- ========================================
      JAVASCRIPT
@@ -968,6 +959,32 @@ function toggleSub(header, event) {
   const wasOpen = sub.classList.contains('open');
   sub.classList.toggle('open');
   if (!wasOpen) addScore();
+}
+
+/* ----------------------------------------
+   NAV TO SECTION — switches to memo view, opens section, scrolls to it
+   ---------------------------------------- */
+function navToSection(e, id) {
+  e.preventDefault();
+  // If game is showing, close it
+  const gameScreen = document.getElementById('gameScreen');
+  if (gameScreen.classList.contains('active')) {
+    hideGame();
+  }
+  // Make sure main content is visible
+  document.getElementById('mainContent').style.display = '';
+  // Find the section card and open it
+  const card = document.getElementById(id);
+  if (card) {
+    if (!card.classList.contains('open')) {
+      card.classList.add('open');
+      addScore();
+    }
+    // Scroll into view after a brief delay for layout
+    setTimeout(() => {
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
 }
 
 /* ----------------------------------------
@@ -1011,6 +1028,8 @@ function startBoot() {
     requestAnimationFrame(() => {
       document.getElementById('mainContent').style.opacity = '1';
     });
+    // Spawn floating portfolio logo asteroids
+    spawnAsteroids();
   }, lastDelay + 800);
 }
 
@@ -1022,14 +1041,14 @@ function showGame(e) {
   document.getElementById('gameScreen').classList.add('active');
   document.getElementById('mainContent').style.display = 'none';
   document.querySelector('.bottom-invader').style.display = 'none';
-  document.querySelectorAll('.invader').forEach(el => el.style.display = 'none');
+
   sizeGameCanvas();
 }
 function hideGame() {
   document.getElementById('gameScreen').classList.remove('active');
   document.getElementById('mainContent').style.display = '';
   document.querySelector('.bottom-invader').style.display = '';
-  document.querySelectorAll('.invader').forEach(el => el.style.display = '');
+
   if (gameRunning) { gameRunning = false; }
 }
 function sizeGameCanvas() {
@@ -1815,13 +1834,146 @@ function startGame() {
 }
 
 /* ----------------------------------------
-   STARFIELD (canvas particle background)
+   FUNNY "COMING SOON" TOAST MESSAGES
    ---------------------------------------- */
+const COMING_SOON_MSGS = [
+  "ERROR 418: I'm a teapot. Check back later.",
+  "COMING SOON™ (patience is a virtue)",
+  "This page is still loading... from 1982",
+  "INSERT COIN to unlock this feature",
+  "Our hamsters are still coding this one",
+  "Under construction. Hard hats required.",
+  "404: Feature not found. Try the PLAY tab instead?",
+  "This feature is in stealth mode",
+  "Buffering... just kidding. It doesn't exist yet.",
+  "The AI said it would be done by Friday",
+  "CLASSIFIED // CLEARANCE LEVEL: NOT YOU",
+  "Ask again later. The magic 8-ball has spoken.",
+  "Feature locked. Score 9999 to unlock.",
+  "The intern is working on it (it's me)",
+  "This tab is a decoy. You fell for it.",
+  "SEGFAULT: too much ambition, not enough time"
+];
+let comingSoonIdx = 0;
+let toastTimeout = null;
+
+function showComingSoon(e, tabName) {
+  if (e) e.preventDefault();
+  const toast = document.getElementById('toast');
+  // Cycle through messages
+  const msg = COMING_SOON_MSGS[comingSoonIdx % COMING_SOON_MSGS.length];
+  comingSoonIdx++;
+  toast.textContent = '[ ' + tabName + ' ] ' + msg;
+  // Reset animation
+  toast.classList.remove('show');
+  clearTimeout(toastTimeout);
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+    toastTimeout = setTimeout(() => toast.classList.remove('show'), 2500);
+  });
+}
+
+/* ----------------------------------------
+   STARFIELD + FLOATING PORTFOLIO LOGOS
+   All rendered on a single canvas — no DOM, no server needed
+   ---------------------------------------- */
+const LOGO_SRCS = [
+  'epv_portfolio/esg-logo.png',
+  'epv_portfolio/geocomply-logo.png',
+  'epv_portfolio/oneplan-logo.png',
+  'epv_portfolio/proshop-logo.png',
+  'epv_portfolio/repurpose-logo.png',
+  'epv_portfolio/sweetspot-logo.png',
+  'epv_portfolio/swish-2023.png',
+  'epv_portfolio/joopiter-logo.png',
+  'epv_portfolio/657c0878d0992315accd8ed7_FUZE_Vector-Logos-09-1.png',
+  'epv_portfolio/appetize-1.svg',
+  'epv_portfolio/arena-club.svg',
+  'epv_portfolio/athletes.svg',
+  'epv_portfolio/draftkings.svg',
+  'epv_portfolio/fitlab.svg',
+  'epv_portfolio/flykitt.svg',
+  'epv_portfolio/gist-2.svg',
+  'epv_portfolio/ida.svg',
+  'epv_portfolio/loveb.svg',
+  'epv_portfolio/mojo.svg',
+  'epv_portfolio/movella.svg',
+  'epv_portfolio/portfolio_canopy.svg',
+  'epv_portfolio/portfolio_Copa90.svg',
+  'epv_portfolio/portfolio_EL1.svg',
+  'epv_portfolio/portfolio_Oura.svg',
+  'epv_portfolio/portfolio_PFL.svg',
+  'epv_portfolio/portfolio_PlayVS.svg',
+  'epv_portfolio/portfolio_Steezy.svg',
+  'epv_portfolio/sfc.svg',
+  'epv_portfolio/spoton.svg',
+  'epv_portfolio/synergy-1.svg',
+  'epv_portfolio/togethxr.svg'
+];
+
+// Pre-load all logos into Image objects
+const loadedLogos = [];
+LOGO_SRCS.forEach(src => {
+  const img = new Image();
+  img.src = src;
+  img.loaded = false;
+  img.onload = function() { this.loaded = true; };
+  img.onerror = function() { this.failed = true; };
+  loadedLogos.push(img);
+});
+
+// Off-screen canvas for green-tinting logos
+let tintCanvas = null;
+let tintCtx = null;
+function getTintedLogo(img, size) {
+  if (!tintCanvas) {
+    tintCanvas = document.createElement('canvas');
+    tintCtx = tintCanvas.getContext('2d');
+  }
+  tintCanvas.width = size;
+  tintCanvas.height = size;
+  tintCtx.clearRect(0, 0, size, size);
+  // Draw the logo
+  tintCtx.drawImage(img, 0, 0, size, size);
+  // Overlay green tint using composite modes
+  tintCtx.globalCompositeOperation = 'source-atop';
+  tintCtx.fillStyle = '#00ff41';
+  tintCtx.fillRect(0, 0, size, size);
+  tintCtx.globalCompositeOperation = 'source-over';
+  return tintCanvas;
+}
+
+let floatingLogos = [];
+let logosSpawned = false;
+
+function spawnAsteroids() {
+  if (logosSpawned) return;
+  logosSpawned = true;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  // Shuffle and pick 20
+  const shuffled = [...loadedLogos].sort(() => Math.random() - 0.5);
+  const count = 20;
+  for (let i = 0; i < count; i++) {
+    floatingLogos.push({
+      img: shuffled[i % shuffled.length],
+      x: Math.random() * vw,
+      y: Math.random() * vh,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      rot: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.005,
+      size: 28 + Math.random() * 20,
+      alpha: 0.12 + Math.random() * 0.12
+    });
+  }
+}
+
 (function initStarfield() {
   const canvas = document.getElementById('starfield');
   const ctx = canvas.getContext('2d');
   let stars = [];
-  const COUNT = 60;
+  const STAR_COUNT = 60;
 
   function resize() {
     canvas.width = window.innerWidth;
@@ -1830,7 +1982,7 @@ function startGame() {
   window.addEventListener('resize', resize);
   resize();
 
-  for (let i = 0; i < COUNT; i++) {
+  for (let i = 0; i < STAR_COUNT; i++) {
     stars.push({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
@@ -1841,18 +1993,51 @@ function startGame() {
   }
 
   function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const W = canvas.width;
+    const H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Draw stars
     stars.forEach(s => {
-      ctx.fillStyle = `rgba(0, 255, 65, ${s.alpha})`;
+      ctx.fillStyle = 'rgba(0,255,65,' + s.alpha + ')';
       ctx.fillRect(Math.floor(s.x), Math.floor(s.y), s.size, s.size);
       s.y += s.speed;
       s.alpha += (Math.random() - 0.5) * 0.02;
-      s.alpha = Math.max(0.05, Math.min(0.5, s.alpha));
-      if (s.y > canvas.height) {
-        s.y = -2;
-        s.x = Math.random() * canvas.width;
-      }
+      if (s.alpha < 0.05) s.alpha = 0.05;
+      if (s.alpha > 0.5) s.alpha = 0.5;
+      if (s.y > H) { s.y = -2; s.x = Math.random() * W; }
     });
+
+    // Draw floating portfolio logos
+    floatingLogos.forEach(l => {
+      if (!l.img.loaded || l.img.failed) return;
+      l.x += l.vx;
+      l.y += l.vy;
+      l.rot += l.rotSpeed;
+      // Wrap around
+      if (l.x < -l.size) l.x = W + l.size * 0.5;
+      if (l.x > W + l.size) l.x = -l.size * 0.5;
+      if (l.y < -l.size) l.y = H + l.size * 0.5;
+      if (l.y > H + l.size) l.y = -l.size * 0.5;
+
+      ctx.save();
+      ctx.globalAlpha = l.alpha;
+      ctx.translate(l.x + l.size / 2, l.y + l.size / 2);
+      ctx.rotate(l.rot);
+      // Draw green-tinted version
+      try {
+        const tinted = getTintedLogo(l.img, Math.round(l.size));
+        ctx.drawImage(tinted, -l.size / 2, -l.size / 2, l.size, l.size);
+      } catch(e) {
+        // If canvas taint (CORS), draw a green circle placeholder instead
+        ctx.fillStyle = 'rgba(0,255,65,0.6)';
+        ctx.beginPath();
+        ctx.arc(0, 0, l.size / 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    });
+
     requestAnimationFrame(draw);
   }
   draw();
