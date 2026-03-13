@@ -668,12 +668,14 @@ body {
   display: none;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding: 8px 16px 12px;
+  box-sizing: border-box;
 }
 .game-screen.active { display: flex; }
 .game-back-btn {
-  position: absolute;
-  top: 10px; right: 16px;
+  align-self: flex-end;
+  flex-shrink: 0;
   font-family: var(--font-pixel);
   font-size: 8px;
   color: var(--text-dim);
@@ -683,7 +685,7 @@ body {
   border-radius: 2px;
   transition: all 0.2s;
   text-decoration: none;
-  z-index: 3;
+  margin-bottom: 6px;
 }
 .game-back-btn:hover { color: var(--green); border-color: var(--green-dark); }
 #gameCanvas {
@@ -1159,6 +1161,7 @@ function showGame(e) {
   if (e) e.preventDefault();
   document.getElementById('gameScreen').classList.add('active');
   document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('navbar').style.display = 'none';
   document.querySelector('.bottom-invader').style.display = 'none';
 
   sizeGameCanvas();
@@ -1166,16 +1169,21 @@ function showGame(e) {
 function hideGame() {
   document.getElementById('gameScreen').classList.remove('active');
   document.getElementById('mainContent').style.display = '';
+  document.getElementById('navbar').style.display = '';
   document.querySelector('.bottom-invader').style.display = '';
 
   if (gameRunning) { gameRunning = false; }
 }
 function sizeGameCanvas() {
   const c = document.getElementById('gameCanvas');
-  // Classic Space Invaders is ~224x256 logical, we use 448x512 (2x)
-  // Scale to fit viewport
-  const maxW = window.innerWidth - 16;
-  const maxH = window.innerHeight - 16;
+  const screen = document.getElementById('gameScreen');
+  const backBtn = screen.querySelector('.game-back-btn');
+  // Measure actual available space inside the padded game-screen
+  const screenRect = screen.getBoundingClientRect();
+  const btnRect = backBtn ? backBtn.getBoundingClientRect() : { bottom: 0, height: 0 };
+  const usedTop = (btnRect.bottom - screenRect.top) + 6; // btn height + gap
+  const maxW = screenRect.width - 32;
+  const maxH = screenRect.height - usedTop - 12; // 12px bottom pad
   const ratio = 448 / 512;
   let w, h;
   if (maxW / maxH > ratio) { h = maxH; w = h * ratio; }
