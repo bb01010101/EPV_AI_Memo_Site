@@ -528,6 +528,11 @@ body {
   margin-top: 10px;
 }
 
+/* Keyword emphasis — amber color for key terms in body text */
+.kw {
+  color: var(--amber);
+}
+
 /* ========================================
    EPV LOGO
    ======================================== */
@@ -636,22 +641,17 @@ body {
   color: var(--amber);
 }
 
-/* Desktop controls hint */
+/* Desktop controls hint — lives inside the start overlay */
+.game-overlay .controls-hint,
 .controls-hint {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
   font-family: var(--font-pixel);
-  font-size: 8px;
-  color: rgba(0, 255, 65, 0.5);
+  font-size: 7px;
+  color: rgba(0, 255, 65, 0.6);
   white-space: nowrap;
-  pointer-events: none;
-  z-index: 5;
-  opacity: 1;
-  transition: opacity 1.2s ease;
+  margin-top: 18px;
+  letter-spacing: 0.05em;
+  animation: none !important;
 }
-.controls-hint.fade-out { opacity: 0; }
 @media (max-width: 700px), (pointer: coarse) {
   .controls-hint { display: none; }
 }
@@ -708,7 +708,7 @@ body {
 }
 .game-overlay p {
   font-size: clamp(8px, 1.5vw, 12px);
-  color: var(--green);
+  color: var(--amber);
   animation: blink-text 1.2s step-end infinite;
 }
 .game-overlay .final-score {
@@ -824,7 +824,7 @@ body {
     </div>
     <div class="section-body">
       <div class="section-content">
-        <p>Below is my plan to implement AI into Elysian Park Ventures and their portfolio over the span of 6 weeks:</p>
+        <p>Below is my plan to implement <span class="kw">AI</span> into <span class="kw">Elysian Park Ventures</span> and their portfolio over the span of <span class="kw">6 weeks</span>:</p>
       </div>
     </div>
   </div>
@@ -837,7 +837,7 @@ body {
     </div>
     <div class="section-body">
       <div class="section-content">
-        <p>AI is very helpful for automating menial backoffice internal tasks, including but not limited to:</p>
+        <p><span class="kw">AI</span> is very helpful for <span class="kw">automating menial backoffice internal tasks</span>, including but not limited to:</p>
 
         <div class="sub-section">
           <div class="sub-header" onclick="toggleSub(this, event)">
@@ -845,7 +845,7 @@ body {
             <span class="sub-title">Excel Modelling</span>
           </div>
           <div class="sub-body"><div class="sub-content">
-            <p>The Claude Excel extension* is exceptional at automating the once tedious task of populating and building models, especially when given the right context, data sources and instructions (especially with an emphasis on source/process transparency).</p>
+            <p>The <span class="kw">Claude Excel extension</span>* is exceptional at <span class="kw">automating</span> the once tedious task of populating and building models, especially when given the right context, data sources and instructions (especially with an emphasis on <span class="kw">source/process transparency</span>).</p>
           </div></div>
         </div>
 
@@ -855,7 +855,7 @@ body {
             <span class="sub-title">File Tree Organization</span>
           </div>
           <div class="sub-body"><div class="sub-content">
-            <p>Claude Cowork* is great for overall planning organization. For example, I give Claude access to my file tree and routinely have it filter everything into neat folders - including a suggested delete folder which I then manually delete.  In the future, I may trust Claude to delete files for me but for now I have it do all the work and essentially just do the last step.  Beyond building tools, a key goal is to help any EPV employee become genuinely proficient in using genAI tools in their day-to-day work, starting with accessible entry points like the Claude Excel* extension and Claude Cowork*, and progressing to Claude Code* / Codex / Antigravity for those who want to go deeper.</p>
+            <p><span class="kw">Claude Cowork</span>* is great for overall planning organization. For example, I give Claude access to my <span class="kw">file tree</span> and routinely have it filter everything into neat folders - including a suggested delete folder which I then manually delete.  In the future, I may trust Claude to delete files for me but for now I have it do all the work and essentially just do the last step.  Beyond building tools, a key goal is to help any EPV employee become genuinely proficient in using <span class="kw">genAI tools</span> in their day-to-day work, starting with accessible entry points like the Claude Excel* extension and Claude Cowork*, and progressing to <span class="kw">Claude Code* / Codex / Antigravity</span> for those who want to go deeper.</p>
             <p class="footnote">* - Claude Opus 4.6 is the best model for these tasks currently, but this could be subject to change, of course.</p>
           </div></div>
         </div>
@@ -866,7 +866,7 @@ body {
             <span class="sub-title">Email Organization</span>
           </div>
           <div class="sub-body"><div class="sub-content">
-            <p>I use a custom email agent to summarize and filter my emails everyday.  While an email agent may sound scary and invasive, the way I have it set up is non-intrusive.  The architecture is a python program that runs the following data flow: my Gmail Inbox → Gmail API (read-only) → Claude API → Dashboard/Digest.</p>
+            <p>I use a <span class="kw">custom email agent</span> to summarize and filter my emails everyday.  While an email agent may sound scary and invasive, the way I have it set up is <span class="kw">non-intrusive</span>.  The architecture is a python program that runs the following data flow: my Gmail Inbox → <span class="kw">Gmail API (read-only)</span> → <span class="kw">Claude API</span> → <span class="kw">Dashboard/Digest</span>.</p>
           </div></div>
         </div>
 
@@ -876,7 +876,7 @@ body {
             <span class="sub-title">Online Meeting Transcription</span>
           </div>
           <div class="sub-body"><div class="sub-content">
-            <p>I'm assuming EPV already employs this in some manner or another, but I find online meeting transcription/summary extremely useful.  There are a lot of tools out there like otter.ai or  fireflies.ai , but the backbone technology behind most of them is an open-source voice to text transcription tool called Whisper.</p>
+            <p>I'm assuming EPV already employs this in some manner or another, but I find <span class="kw">online meeting transcription/summary</span> extremely useful.  There are a lot of tools out there like <span class="kw">otter.ai</span> or <span class="kw">fireflies.ai</span>, but the backbone technology behind most of them is an open-source voice to text transcription tool called <span class="kw">Whisper</span>.</p>
           </div></div>
         </div>
 
@@ -886,7 +886,7 @@ body {
             <span class="sub-title">Planning and Scheduling</span>
           </div>
           <div class="sub-body"><div class="sub-content">
-            <p>Scheduling meeting times with tons of people can get pretty cumbersome.  I know a lot of people use calendly.com but there's an open source alternative called cal.com.  The hosted enterprise version runs $700-800/mo for 20+ people, but given its open source nature, you can actually just fork the code and self host it for basically free sans minimal server costs.  In order to add single sign-on (SSO) to this self-hosted version you'd integrate Google Workspace OAuth or Microsoft Azure AD, both of which are also free.  Another idea would be to layer in a lightweight AI scheduling agent that reads inbound meeting requests, determines priority tier (i.e. LP, portfolio company, new founder, cold outreach, etc.) and subsequently routes each person to the appropriate partner's calendar or escalates to an EA.  This may be useful for the sourcing tool I will describe later.</p>
+            <p>Scheduling meeting times with tons of people can get pretty cumbersome.  I know a lot of people use calendly.com but there's an open source alternative called <span class="kw">cal.com</span>.  The hosted enterprise version runs $700-800/mo for 20+ people, but given its open source nature, you can actually just fork the code and <span class="kw">self host it for basically free</span> sans minimal server costs.  In order to add <span class="kw">single sign-on (SSO)</span> to this self-hosted version you'd integrate Google Workspace OAuth or Microsoft Azure AD, both of which are also free.  Another idea would be to layer in a lightweight <span class="kw">AI scheduling agent</span> that reads inbound meeting requests, determines <span class="kw">priority tier</span> (i.e. LP, portfolio company, new founder, cold outreach, etc.) and subsequently routes each person to the appropriate partner's calendar or escalates to an EA.  This may be useful for the sourcing tool I will describe later.</p>
           </div></div>
         </div>
 
@@ -896,7 +896,7 @@ body {
             <span class="sub-title">Prospecting</span>
           </div>
           <div class="sub-body"><div class="sub-content">
-            <p>Identifying and reaching potential LPs or deal flow contacts is important albeit time consuming.   In a prior role I built scrapers(via CURL requests or a selenium bot) to extract contact data from alumni networks and family office databases, then filtered by geography and seniority (C-suite, founder, etc.)  to amass targeted outreach lists.  A similar approach could be applied at EPV wherein the entire pipeline – scraping, filtering, data cleaning, and initial outreach drafting can be automated with a program or agent, feeding directly into the scheduling layer described above.</p>
+            <p>Identifying and reaching potential <span class="kw">LPs</span> or <span class="kw">deal flow contacts</span> is important albeit time consuming.   In a prior role I built <span class="kw">scrapers</span> (via CURL requests or a selenium bot) to extract contact data from <span class="kw">alumni networks</span> and <span class="kw">family office databases</span>, then filtered by geography and seniority (C-suite, founder, etc.)  to amass targeted outreach lists.  A similar approach could be applied at EPV wherein the entire pipeline – <span class="kw">scraping, filtering, data cleaning, and initial outreach drafting</span> can be automated with a program or agent, feeding directly into the scheduling layer described above.</p>
           </div></div>
         </div>
       </div>
@@ -918,7 +918,7 @@ body {
             <span class="sub-title">Custom Live Newsflow Tool</span>
           </div>
           <div class="sub-body"><div class="sub-content">
-            <p>Staying up to date on portfolio companies and their various adjacent markets is very difficult to do manually and involves aggregating and synthesizing a wide array of sources in order to paint the whole picture.  A custom newsflow tool could automatically scour the internet daily for articles, filings, and mentions relevant to EPV's portfolio and thesis strategy, tabulated into four categories: Sports+Health, Sports+Fitness, Sports+Commerce, and Sports+Community.  The optimal tech stack for this would likely consist of exa.ai for search and  web crawling, and claude for summary and categorization outputted in a dashboard or daily digest email.  I like Exa.ai because it cuts through the noise of SEO to retrieve the most pertinent information.</p>
+            <p>Staying up to date on portfolio companies and their various adjacent markets is very difficult to do manually and involves aggregating and synthesizing a wide array of sources in order to paint the whole picture.  A <span class="kw">custom newsflow tool</span> could automatically scour the internet daily for articles, filings, and mentions relevant to EPV's portfolio and thesis strategy, tabulated into four categories: <span class="kw">Sports+Health</span>, <span class="kw">Sports+Fitness</span>, <span class="kw">Sports+Commerce</span>, and <span class="kw">Sports+Culture</span>.  The optimal tech stack for this would likely consist of <span class="kw">exa.ai</span> for search and web crawling, and claude for summary and categorization outputted in a <span class="kw">dashboard or daily digest email</span>.  I like Exa.ai because it cuts through the noise of SEO to retrieve the most pertinent information.</p>
           </div></div>
         </div>
 
@@ -928,7 +928,7 @@ body {
             <span class="sub-title">Sourcing Dashboard with Inflow Channels</span>
           </div>
           <div class="sub-body"><div class="sub-content">
-            <p>Spotting talented founders before the competition necessarily requires casting a wide net across many inflow channels concurrently.  A centralized, specialized sourcing dashboard could aggregate deal flow from a plethora of reputable sources: YC, Crunchbase, Pitchbook, AlphaSense, hackathon leaderboards, LinkedIn, and others into a single filterable interface.  Furthermore, when an interesting founder surfaces, an AI agent could automatically "build a biography" of the founder by pulling from their LinkedIn, X, and other public sources (github, Instagram, web articles, etc.) – consolidated and enriched by Clay.com or an in-house process. The vision here is to identify unique startup companies within the "Sports+" domain and subsequently provide a background check on the founder.</p>
+            <p>Spotting talented founders before the competition necessarily requires casting a wide net across many inflow channels concurrently.  A centralized, specialized <span class="kw">sourcing dashboard</span> could aggregate deal flow from a plethora of reputable sources: <span class="kw">YC, Crunchbase, Pitchbook, AlphaSense</span>, hackathon leaderboards, LinkedIn, and others into a <span class="kw">single filterable interface</span>.  Furthermore, when an interesting founder surfaces, an <span class="kw">AI agent</span> could automatically "build a biography" of the founder by pulling from their LinkedIn, X, and other public sources (github, Instagram, web articles, etc.) – consolidated and enriched by <span class="kw">Clay.com</span> or an in-house process. The vision here is to identify unique startup companies within the <span class="kw">"Sports+" domain</span> and subsequently provide a background check on the founder.</p>
           </div></div>
         </div>
 
@@ -938,7 +938,7 @@ body {
             <span class="sub-title">AI Defensibility Assessment Criterium</span>
           </div>
           <div class="sub-body"><div class="sub-content">
-            <p>One of the harder but most important judgments in early-stage investing right now is determining exactly how defensible a company actually is in an AI-saturated market.  Furthermore, even if a company has a momentary competitive advantage, one needs to account for the possibility that it will be deemed obsolete with the next big genAI model release or breakthrough.  An assessment with a list of criteria should be produced to assess this risk, especially for software companies.  From there, a lightweight model could be built to assess a company's current AI adoption (or lack thereof) and identify whether their moat is real or illusory.  Given software alone carries essentially no IP protection (and "vibe coding" becoming increasingly more powerful), the risk of a small yet nimble competitor emerging and disrupting the scene is very real – making the more important factors limited to things like proprietary data integration, a unique network effect, vendor lock-in, or physical hardware.  In addition, the model would estimate an "MVP clone timeline" - essentially how long it would take a well-resourced competitor or a nimble startup to replicate the core product.  This could be a useful internal scoring rubric applied consistently across all inbound deals.</p>
+            <p>One of the harder but most important judgments in early-stage investing right now is determining exactly how <span class="kw">defensible</span> a company actually is in an <span class="kw">AI-saturated market</span>.  Furthermore, even if a company has a momentary competitive advantage, one needs to account for the possibility that it will be deemed <span class="kw">obsolete</span> with the next big genAI model release or breakthrough.  An assessment with a list of criteria should be produced to assess this risk, especially for software companies.  From there, a lightweight model could be built to assess a company's current AI adoption (or lack thereof) and identify whether their <span class="kw">moat is real or illusory</span>.  Given software alone carries essentially no <span class="kw">IP protection</span> (and <span class="kw">"vibe coding"</span> becoming increasingly more powerful), the risk of a small yet nimble competitor emerging and disrupting the scene is very real – making the more important factors limited to things like <span class="kw">proprietary data integration</span>, a <span class="kw">unique network effect</span>, <span class="kw">vendor lock-in</span>, or <span class="kw">physical hardware</span>.  In addition, the model would estimate an <span class="kw">"MVP clone timeline"</span> - essentially how long it would take a well-resourced competitor or a nimble startup to replicate the core product.  This could be a useful <span class="kw">internal scoring rubric</span> applied consistently across all inbound deals.</p>
           </div></div>
         </div>
       </div>
@@ -953,7 +953,7 @@ body {
     </div>
     <div class="section-body">
       <div class="section-content">
-        <p>Beyond the specific tools above, there is broad utility in spinning up task-specific AI agents for one-off or recurring research and consultancy needs -  competitive landscape analysis, market sizing, LP report drafts, and similar work that currently consumes associate time.  These are generally straightforward to build on top of the Claude API and can be scoped narrowly in order to hone in on one task as opposed to a general-purpose chatbot. While I haven't experimented enough with the technology yet to vouch with certainty of the safety and veracity of these tools, I have heard great things about breakthrough agentic tools like the open source OpenClaw (aka OpenClawd aka MoltBot) and Kimi K2.5, which can continuously perform online or real-world tasks when trained correctly.</p>
+        <p>Beyond the specific tools above, there is broad utility in spinning up <span class="kw">task-specific AI agents</span> for one-off or recurring research and consultancy needs — <span class="kw">competitive landscape analysis, market sizing, LP report drafts</span>, and similar work that currently consumes associate time.  These are generally straightforward to build on top of the <span class="kw">Claude API</span> and can be scoped narrowly in order to hone in on one task as opposed to a general-purpose chatbot. While I haven't experimented enough with the technology yet to vouch with certainty of the safety and veracity of these tools, I have heard great things about breakthrough agentic tools like the open source <span class="kw">OpenClaw</span> (aka OpenClawd aka MoltBot) and <span class="kw">Kimi K2.5</span>, which can continuously perform online or real-world tasks when trained correctly.</p>
       </div>
     </div>
   </div>
@@ -1020,9 +1020,8 @@ body {
     <div class="game-overlay clickable" id="gameOverlay" onclick="startGame()">
       <h2>EPV INVADERS</h2>
       <p>[ CLICK TO START ]</p>
+      <p class="controls-hint">ARROW KEYS TO MOVE &nbsp;·&nbsp; SPACEBAR TO FIRE</p>
     </div>
-    <!-- Desktop hint -->
-    <div class="controls-hint" id="controlsHint">ARROW KEYS TO MOVE &nbsp;·&nbsp; SPACEBAR TO FIRE</div>
   </div>
   <!-- Mobile joystick + fire — outside canvas, at bottom of screen -->
   <div class="game-controls" id="gameControls">
@@ -1458,14 +1457,6 @@ function startGame() {
   addBtnListeners(btnLeft,  'ArrowLeft',  null);
   addBtnListeners(btnRight, 'ArrowRight', null);
   addBtnListeners(btnFire,  ' ',          null);
-
-  // Desktop controls hint — show for 3s then fade out
-  const hint = document.getElementById('controlsHint');
-  if (hint) {
-    hint.style.opacity = '1';
-    hint.classList.remove('fade-out');
-    setTimeout(() => hint.classList.add('fade-out'), 3000);
-  }
 
   // Player bullet (only 1 on screen at a time, like original)
   let playerBullet = null;
@@ -1973,7 +1964,6 @@ function startGame() {
    FUNNY "COMING SOON" TOAST MESSAGES
    ---------------------------------------- */
 const COMING_SOON_MSGS = [
-  "ERROR 418: I'm a teapot. Check back later.",
   "COMING SOON™ (patience is a virtue)",
   "This page is still loading... from 1982",
   "INSERT COIN to unlock this feature",
@@ -1982,13 +1972,10 @@ const COMING_SOON_MSGS = [
   "404: Feature not found. Try the PLAY tab instead?",
   "This feature is in stealth mode",
   "Buffering... just kidding. It doesn't exist yet.",
-  "The AI said it would be done by Friday",
   "CLASSIFIED // CLEARANCE LEVEL: NOT YOU",
   "Ask again later. The magic 8-ball has spoken.",
   "Feature locked. Score 9999 to unlock.",
-  "The intern is working on it (it's me)",
   "This tab is a decoy. You fell for it.",
-  "SEGFAULT: too much ambition, not enough time"
 ];
 let comingSoonIdx = 0;
 let toastTimeout = null;
