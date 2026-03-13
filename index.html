@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPV // AI Implementation Plan</title>
+
+<!-- Google Fonts: Pixel + Monospace -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<style>
+/* ========================================
+   CSS RESET & BASE
+   ======================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --green: #00ff41;
+  --green-dim: #00cc33;
+  --green-dark: #00801f;
+  --green-glow: rgba(0, 255, 65, 0.15);
+  --amber: #ffb000;
+  --amber-dim: #cc8d00;
+  --amber-glow: rgba(255, 176, 0, 0.15);
+  --bg: #0a0a0a;
+  --bg-card: #0d0d0d;
+  --border: #1a3a1a;
+  --text: #b0ffb8;
+  --text-dim: #4a7a4a;
+  --font-pixel: 'Press Start 2P', monospace;
+  --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* ========================================
+   CRT SCANLINE OVERLAY
+   ======================================== */
+.scanlines {
+  pointer-events: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+}
+
+/* ========================================
+   STAR CANVAS (behind everything)
+   ======================================== */
+#starfield {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+}
+
+/* ========================================
+   SPLASH SCREEN
+   ======================================== */
+.splash {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 10000;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+.splash.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.splash-title {
+  font-family: var(--font-pixel);
+  font-size: clamp(14px, 3vw, 28px);
+  color: var(--green);
+  text-shadow: 0 0 20px var(--green), 0 0 40px var(--green-dark);
+  margin-bottom: 40px;
+  text-align: center;
+  line-height: 2;
+}
+.splash-press {
+  font-family: var(--font-pixel);
+  font-size: clamp(10px, 2vw, 16px);
+  color: var(--amber);
+  text-shadow: 0 0 15px var(--amber);
+  animation: blink-text 1.2s step-end infinite;
+}
+.splash-invader {
+  margin-bottom: 30px;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  width: 44px;
+}
+.splash-invader .px {
+  width: 4px; height: 4px;
+  background: var(--green);
+  box-shadow: 0 0 4px var(--green);
+}
+.splash-invader .px.off { background: transparent; box-shadow: none; }
+
+@keyframes blink-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ========================================
+   BOOT SEQUENCE
+   ======================================== */
+.boot-screen {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 9998;
+  background: var(--bg);
+  padding: 40px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+.boot-screen.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.boot-line {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--green);
+  opacity: 0;
+  white-space: nowrap;
+  margin-bottom: 4px;
+}
+.boot-line.visible {
+  opacity: 1;
+}
+.boot-line.amber { color: var(--amber); }
+
+/* ========================================
+   NAVBAR
+   ======================================== */
+.navbar {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  z-index: 100;
+  background: rgba(10, 10, 10, 0.95);
+  border-bottom: 2px solid var(--green-dark);
+  box-shadow: 0 2px 20px var(--green-glow);
+  backdrop-filter: blur(8px);
+}
+.nav-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 52px;
+}
+.nav-brand {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  color: var(--green);
+  text-shadow: 0 0 10px var(--green-dark);
+  white-space: nowrap;
+}
+.nav-links {
+  display: flex;
+  gap: 6px;
+  list-style: none;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.nav-links a {
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-links a:hover {
+  color: var(--green);
+  border-color: var(--green-dark);
+  text-shadow: 0 0 8px var(--green-dark);
+  background: var(--green-glow);
+}
+.nav-icon {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border: 1px solid currentColor;
+  border-radius: 1px;
+}
+
+/* Score counter */
+.score-display {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--amber);
+  text-shadow: 0 0 10px var(--amber-dim);
+  white-space: nowrap;
+}
+
+/* ========================================
+   MAIN CONTAINER — CRT CURVATURE
+   ======================================== */
+.main-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 880px;
+  margin: 80px auto 120px;
+  padding: 30px 24px;
+  border: 1px solid var(--green-dark);
+  border-radius: 18px;
+  background: radial-gradient(ellipse at center, #0f1a0f 0%, var(--bg) 70%);
+  box-shadow:
+    0 0 60px var(--green-glow),
+    inset 0 0 80px rgba(0, 0, 0, 0.5);
+}
+
+/* ========================================
+   SECTION CARDS
+   ======================================== */
+.section-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  background: var(--bg-card);
+  overflow: hidden;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.section-card:hover {
+  border-color: var(--green-dark);
+  box-shadow: 0 0 20px var(--green-glow);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+.section-header:hover {
+  background: rgba(0, 255, 65, 0.03);
+}
+.section-header:hover .section-title {
+  animation: glitch-flicker 0.3s steps(2) 1;
+}
+
+.section-arrow {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--green);
+  transition: transform 0.3s;
+  flex-shrink: 0;
+}
+.section-card.open .section-arrow {
+  transform: rotate(90deg);
+}
+
+.section-title {
+  font-family: var(--font-pixel);
+  font-size: clamp(8px, 1.5vw, 11px);
+  color: var(--green);
+  text-shadow: 0 0 8px var(--green-dark);
+  line-height: 1.6;
+}
+.section-title::after {
+  content: '█';
+  animation: cursor-blink 1s step-end infinite;
+  margin-left: 6px;
+  font-size: 0.8em;
+  color: var(--green);
+  opacity: 0.7;
+}
+
+.section-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.section-card.open .section-body {
+  max-height: 2000px;
+}
+.section-content {
+  padding: 0 20px 20px 20px;
+  border-top: 1px solid var(--border);
+}
+.section-content p {
+  margin-top: 14px;
+}
+.section-content h4 {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--amber);
+  margin-top: 18px;
+  margin-bottom: 6px;
+  text-shadow: 0 0 6px var(--amber-dim);
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 0; }
+}
+@keyframes glitch-flicker {
+  0% { opacity: 1; transform: translateX(0); }
+  25% { opacity: 0.6; transform: translateX(-2px); }
+  50% { opacity: 1; transform: translateX(1px); }
+  75% { opacity: 0.8; transform: translateX(-1px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+/* ========================================
+   TIMELINE
+   ======================================== */
+.timeline-track {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin: 20px 0 10px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+.timeline-node {
+  flex: 1;
+  min-width: 100px;
+  text-align: center;
+  position: relative;
+  cursor: pointer;
+}
+.timeline-node::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 0; right: 0;
+  height: 2px;
+  background: var(--green-dark);
+  z-index: 0;
+}
+.timeline-node:first-child::before { left: 50%; }
+.timeline-node:last-child::before { right: 50%; }
+
+.timeline-dot {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid var(--green);
+  background: var(--bg);
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--green-dark);
+  transition: all 0.3s;
+  margin-bottom: 8px;
+}
+.timeline-node:hover .timeline-dot,
+.timeline-node.active .timeline-dot {
+  background: var(--green);
+  box-shadow: 0 0 16px var(--green);
+}
+.timeline-label {
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  color: var(--text-dim);
+  display: block;
+  transition: color 0.3s;
+}
+.timeline-node:hover .timeline-label,
+.timeline-node.active .timeline-label {
+  color: var(--green);
+}
+.timeline-detail {
+  display: none;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--green-dark);
+  border-radius: 4px;
+  background: var(--bg);
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.7;
+  box-shadow: 0 0 14px var(--green-glow);
+}
+.timeline-node.active .timeline-detail {
+  display: block;
+}
+
+/* ========================================
+   FOOTNOTE
+   ======================================== */
+.footnote {
+  margin-top: 20px;
+  padding: 16px 20px;
+  border-left: 3px solid var(--amber);
+  background: rgba(255, 176, 0, 0.04);
+  border-radius: 0 4px 4px 0;
+  font-size: 13px;
+  color: var(--amber);
+  opacity: 0.85;
+}
+
+/* ========================================
+   BOTTOM SPACE INVADER
+   ======================================== */
+.bottom-invader {
+  position: fixed;
+  bottom: 12px;
+  left: -60px;
+  z-index: 50;
+  animation: walk-across 28s linear infinite;
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+  /* Green colorway filter */
+  filter: brightness(0) saturate(100%) invert(70%) sepia(90%) saturate(600%) hue-rotate(85deg) brightness(1.1);
+  opacity: 0.7;
+}
+
+@keyframes walk-across {
+  0% { left: -60px; }
+  100% { left: calc(100% + 60px); }
+}
+
+/* ========================================
+   SUB-SECTION DROPDOWNS
+   ======================================== */
+.sub-section {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-top: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+.sub-section:hover {
+  border-color: var(--green-dark);
+}
+.sub-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+.sub-header:hover {
+  background: rgba(0, 255, 65, 0.03);
+}
+.sub-header:hover .sub-title {
+  animation: glitch-flicker 0.3s steps(2) 1;
+}
+.sub-arrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--amber);
+  transition: transform 0.3s;
+  flex-shrink: 0;
+}
+.sub-section.open .sub-arrow {
+  transform: rotate(90deg);
+}
+.sub-title {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--amber);
+  text-shadow: 0 0 6px var(--amber-dim);
+  line-height: 1.6;
+}
+.sub-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sub-section.open .sub-body {
+  max-height: 1000px;
+}
+.sub-content {
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--border);
+}
+.sub-content p {
+  margin-top: 10px;
+}
+
+/* ========================================
+   EPV LOGO
+   ======================================== */
+.epv-logo {
+  display: block;
+  margin: 0 auto 24px;
+  width: 120px;
+  height: auto;
+  /* Convert to green colorway */
+  filter: brightness(0) saturate(100%) invert(70%) sepia(90%) saturate(600%) hue-rotate(85deg) brightness(1.1);
+  opacity: 0.85;
+}
+.splash-logo {
+  width: 160px;
+  height: auto;
+  margin-bottom: 24px;
+  filter: brightness(0) saturate(100%) invert(70%) sepia(90%) saturate(600%) hue-rotate(85deg) brightness(1.1);
+  opacity: 0.9;
+}
+
+/* ========================================
+   FLOATING INVADERS
+   ======================================== */
+.invader {
+  position: fixed;
+  z-index: 0;
+  opacity: 0.08;
+  display: grid;
+  grid-template-columns: repeat(11, 4px);
+  gap: 1px;
+  animation: float-drift linear infinite;
+}
+.invader .px { width: 4px; height: 4px; background: var(--green); }
+.invader .px.off { background: transparent; }
+
+@keyframes float-drift {
+  0% { transform: translateY(0) translateX(0); }
+  50% { transform: translateY(-30px) translateX(15px); }
+  100% { transform: translateY(0) translateX(0); }
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 700px) {
+  .main-wrap { margin: 64px 8px 100px; padding: 16px 10px; }
+  .nav-links { display: none; }
+  .nav-inner { justify-content: center; gap: 12px; }
+  .section-header { padding: 12px 14px; }
+  .section-content { padding: 0 14px 14px; }
+  .timeline-track { flex-direction: column; align-items: stretch; }
+  .timeline-node { min-width: auto; text-align: left; padding-left: 30px; margin-bottom: 10px; }
+  .timeline-node::before { display: none; }
+  .timeline-dot { position: absolute; left: 0; top: 2px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Scanline overlay -->
+<div class="scanlines"></div>
+
+<!-- Star canvas -->
+<canvas id="starfield"></canvas>
+
+<!-- ========================================
+     SPLASH SCREEN
+     ======================================== -->
+<div class="splash" id="splash" onclick="startBoot()">
+  <img src="public/epvlogo.png" alt="Elysian Park Ventures" class="splash-logo">
+  <div class="splash-title">ELYSIAN PARK VENTURES<br>AI IMPLEMENTATION PLAN</div>
+  <div class="splash-press">[ PRESS START ]</div>
+</div>
+
+<!-- ========================================
+     BOOT SEQUENCE
+     ======================================== -->
+<div class="boot-screen" id="bootScreen">
+  <div class="boot-line" data-delay="0">EPV SYSTEMS v4.6 — INITIALIZING...</div>
+  <div class="boot-line" data-delay="200">LOADING KERNEL.............. OK</div>
+  <div class="boot-line" data-delay="400">MEMORY CHECK: 2048K......... OK</div>
+  <div class="boot-line" data-delay="600">MOUNTING /dev/ai_pipeline... OK</div>
+  <div class="boot-line" data-delay="800">VERIFYING PORTFOLIO DATA.... OK</div>
+  <div class="boot-line" data-delay="1000">SCANNING DEAL FLOW......... OK</div>
+  <div class="boot-line amber" data-delay="1200">CLAUDE OPUS 4.6 ONLINE..... READY</div>
+  <div class="boot-line amber" data-delay="1500">ALL SYSTEMS NOMINAL — LAUNCHING INTERFACE</div>
+</div>
+
+<!-- ========================================
+     NAVBAR
+     ======================================== -->
+<nav class="navbar" id="navbar" style="display:none;">
+  <div class="nav-inner">
+    <div class="nav-brand">EPV//AI</div>
+    <ul class="nav-links">
+      <li><a href="#internal"><span class="nav-icon"></span>INTERNAL</a></li>
+      <li><a href="#portfolio"><span class="nav-icon"></span>PORTFOLIO</a></li>
+      <li><a href="#agents"><span class="nav-icon"></span>AGENTS</a></li>
+      <li><a href="#timeline"><span class="nav-icon"></span>TIMELINE</a></li>
+    </ul>
+    <div class="score-display">SCORE <span id="score">0000</span></div>
+  </div>
+</nav>
+
+<!-- ========================================
+     MAIN CONTENT
+     ======================================== -->
+<div class="main-wrap" id="mainContent" style="display:none;">
+
+  <!-- EPV Logo in green colorway -->
+  <img src="public/epvlogo.png" alt="Elysian Park Ventures" class="epv-logo">
+
+  <!-- INTRO -->
+  <div class="section-card" id="intro">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-arrow">▶</span>
+      <span class="section-title">MISSION BRIEFING</span>
+    </div>
+    <div class="section-body">
+      <div class="section-content">
+        <p>Below is my plan to implement AI into Elysian Park Ventures and their portfolio over the span of 6 weeks:</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTERNAL AUTOMATION -->
+  <div class="section-card" id="internal">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-arrow">▶</span>
+      <span class="section-title">INTERNAL AUTOMATION</span>
+    </div>
+    <div class="section-body">
+      <div class="section-content">
+        <p>AI is very helpful for automating menial backoffice internal tasks, including but not limited to:</p>
+
+        <div class="sub-section">
+          <div class="sub-header" onclick="toggleSub(this, event)">
+            <span class="sub-arrow">▶</span>
+            <span class="sub-title">Excel Modelling</span>
+          </div>
+          <div class="sub-body"><div class="sub-content">
+            <p>The Claude Excel extension* is exceptional at automating the once tedious task of populating and building models, especially when given the right context, data sources and instructions (especially with an emphasis on source/process transparency).</p>
+          </div></div>
+        </div>
+
+        <div class="sub-section">
+          <div class="sub-header" onclick="toggleSub(this, event)">
+            <span class="sub-arrow">▶</span>
+            <span class="sub-title">File Tree Organization</span>
+          </div>
+          <div class="sub-body"><div class="sub-content">
+            <p>Claude Cowork* is great for overall planning organization. For example, I give Claude access to my file tree and routinely have it filter everything into neat folders - including a suggested delete folder which I then manually delete.  In the future, I may trust Claude to delete files for me but for now I have it do all the work and essentially just do the last step.  Beyond building tools, a key goal is to help any EPV employee become genuinely proficient in using genAI tools in their day-to-day work, starting with accessible entry points like the Claude Excel* extension and Claude Cowork*, and progressing to Claude Code* / Codex / Antigravity for those who want to go deeper.</p>
+          </div></div>
+        </div>
+
+        <p class="footnote">* - Claude Opus 4.6 is the best model for these tasks currently, but this could be subject to change, of course.</p>
+
+        <div class="sub-section">
+          <div class="sub-header" onclick="toggleSub(this, event)">
+            <span class="sub-arrow">▶</span>
+            <span class="sub-title">Email Organization</span>
+          </div>
+          <div class="sub-body"><div class="sub-content">
+            <p>I use a custom email agent to summarize and filter my emails everyday.  While an email agent may sound scary and invasive, the way I have it set up is non-intrusive.  The architecture is a python program that runs the following data flow: my Gmail Inbox → Gmail API (read-only) → Claude API → Dashboard/Digest.</p>
+          </div></div>
+        </div>
+
+        <div class="sub-section">
+          <div class="sub-header" onclick="toggleSub(this, event)">
+            <span class="sub-arrow">▶</span>
+            <span class="sub-title">Online Meeting Transcription</span>
+          </div>
+          <div class="sub-body"><div class="sub-content">
+            <p>I'm assuming EPV already employs this in some manner or another, but I find online meeting transcription/summary extremely useful.  There are a lot of tools out there like otter.ai or  fireflies.ai , but the backbone technology behind most of them is an open-source voice to text transcription tool called Whisper.</p>
+          </div></div>
+        </div>
+
+        <div class="sub-section">
+          <div class="sub-header" onclick="toggleSub(this, event)">
+            <span class="sub-arrow">▶</span>
+            <span class="sub-title">Planning and Scheduling</span>
+          </div>
+          <div class="sub-body"><div class="sub-content">
+            <p>Scheduling meeting times with tons of people can get pretty cumbersome.  I know a lot of people use calendly.com but there's an open source alternative called cal.com.  The hosted enterprise version runs $700-800/mo for 20+ people, but given its open source nature, you can actually just fork the code and self host it for basically free sans minimal server costs.  In order to add single sign-on (SSO) to this self-hosted version you'd integrate Google Workspace OAuth or Microsoft Azure AD, both of which are also free.  Another idea would be to layer in a lightweight AI scheduling agent that reads inbound meeting requests, determines priority tier (i.e. LP, portfolio company, new founder, cold outreach, etc.) and subsequently routes each person to the appropriate partner's calendar or escalates to an EA.  This may be useful for the sourcing tool I will describe later.</p>
+          </div></div>
+        </div>
+
+        <div class="sub-section">
+          <div class="sub-header" onclick="toggleSub(this, event)">
+            <span class="sub-arrow">▶</span>
+            <span class="sub-title">Prospecting</span>
+          </div>
+          <div class="sub-body"><div class="sub-content">
+            <p>Identifying and reaching potential LPs or deal flow contacts is important albeit time consuming.   In a prior role I built scrapers(via CURL requests or a selenium bot) to extract contact data from alumni networks and family office databases, then filtered by geography and seniority (C-suite, founder, etc.)  to amass targeted outreach lists.  A similar approach could be applied at EPV wherein the entire pipeline – scraping, filtering, data cleaning, and initial outreach drafting can be automated with a program or agent, feeding directly into the scheduling layer described above.</p>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PORTFOLIO OPTIMIZATION -->
+  <div class="section-card" id="portfolio">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-arrow">▶</span>
+      <span class="section-title">CURRENT AND FUTURE PORTFOLIO OPTIMIZATION</span>
+    </div>
+    <div class="section-body">
+      <div class="section-content">
+
+        <div class="sub-section">
+          <div class="sub-header" onclick="toggleSub(this, event)">
+            <span class="sub-arrow">▶</span>
+            <span class="sub-title">Custom Live Newsflow Tool</span>
+          </div>
+          <div class="sub-body"><div class="sub-content">
+            <p>Staying up to date on portfolio companies and their various adjacent markets is very difficult to do manually and involves aggregating and synthesizing a wide array of sources in order to paint the whole picture.  A custom newsflow tool could automatically scour the internet daily for articles, filings, and mentions relevant to EPV's portfolio and thesis strategy, tabulated into four categories: Sports+Health, Sports+Fitness, Sports+Commerce, and Sports+Community.  The optimal tech stack for this would likely consist of exa.ai for search and  web crawling, and claude for summary and categorization outputted in a dashboard or daily digest email.  I like Exa.ai because it cuts through the noise of SEO to retrieve the most pertinent information.</p>
+          </div></div>
+        </div>
+
+        <div class="sub-section">
+          <div class="sub-header" onclick="toggleSub(this, event)">
+            <span class="sub-arrow">▶</span>
+            <span class="sub-title">Sourcing Dashboard with Inflow Channels</span>
+          </div>
+          <div class="sub-body"><div class="sub-content">
+            <p>Spotting talented founders before the competition necessarily requires casting a wide net across many inflow channels concurrently.  A centralized, specialized sourcing dashboard could aggregate deal flow from a plethora of reputable sources: YC, Crunchbase, Pitchbook, AlphaSense, hackathon leaderboards, LinkedIn, and others into a single filterable interface.  Furthermore, when an interesting founder surfaces, an AI agent could automatically "build a biography" of the founder by pulling from their LinkedIn, X, and other public sources (github, Instagram, web articles, etc.) – consolidated and enriched by Clay.com or an in-house process. The vision here is to identify unique startup companies within the "Sports+" domain and subsequently provide a background check on the founder.</p>
+          </div></div>
+        </div>
+
+        <div class="sub-section">
+          <div class="sub-header" onclick="toggleSub(this, event)">
+            <span class="sub-arrow">▶</span>
+            <span class="sub-title">AI Defensibility Assessment Criterium</span>
+          </div>
+          <div class="sub-body"><div class="sub-content">
+            <p>One of the harder but most important judgments in early-stage investing right now is determining exactly how defensible a company actually is in an AI-saturated market.  Furthermore, even if a company has a momentary competitive advantage, one needs to account for the possibility that it will be deemed obsolete with the next big genAI model release or breakthrough.  An assessment with a list of criteria should be produced to assess this risk, especially for software companies.  A few sample questions include: [add Qs] From there, a lightweight model could be built to assess a company's current AI adoption (or lack thereof) and identify whether their moat is real or illusory.  Given software alone carries essentially no IP protection (and "vibe coding" becoming increasingly more powerful), the risk of a small yet nimble competitor emerging and disrupting the scene is very real – making the more important factors limited to things like proprietary data integration, a unique network effect, vendor lock-in, or physical hardware.  In addition, the model would estimate an "MVP clone timeline" - essentially how long it would take a well-resourced competitor or a nimble startup to replicate the core product.  This could be a useful internal scoring rubric applied consistently across all inbound deals.</p>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOM AGENTS -->
+  <div class="section-card" id="agents">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-arrow">▶</span>
+      <span class="section-title">CUSTOM AGENTS FOR CONSULTANCY, RESEARCH, AND TASKS</span>
+    </div>
+    <div class="section-body">
+      <div class="section-content">
+        <p>Beyond the specific tools above, there is broad utility in spinning up task-specific AI agents for one-off or recurring research and consultancy needs -  competitive landscape analysis, market sizing, LP report drafts, and similar work that currently consumes associate time.  These are generally straightforward to build on top of the Claude API and can be scoped narrowly in order to hone in on one task as opposed to a general-purpose chatbot. While I haven't experimented enough with the technology yet to vouch with certainty of the safety and veracity of these tools, I have heard great things about breakthrough agentic tools like the open source OpenClaw (aka OpenClawd aka MoltBot) and Kimi K2.5, which can continuously perform online or real-world tasks when trained correctly.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="section-card" id="timeline">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-arrow">▶</span>
+      <span class="section-title">6 WEEK IMPLEMENTATION TIMELINE</span>
+    </div>
+    <div class="section-body">
+      <div class="section-content">
+
+        <div class="timeline-track">
+          <div class="timeline-node" onclick="toggleTimeline(this, event)">
+            <span class="timeline-dot"></span>
+            <span class="timeline-label">WK 1</span>
+            <div class="timeline-detail">Week 1: Backoffice automation: Claude Cowork + Excel integration &amp; Email Agent</div>
+          </div>
+          <div class="timeline-node" onclick="toggleTimeline(this, event)">
+            <span class="timeline-dot"></span>
+            <span class="timeline-label">WK 2</span>
+            <div class="timeline-detail">Week 2: Live Newsflow Tool (built with exa.ai and claude)</div>
+          </div>
+          <div class="timeline-node" onclick="toggleTimeline(this, event)">
+            <span class="timeline-dot"></span>
+            <span class="timeline-label">WK 3</span>
+            <div class="timeline-detail">Week 3: Prospecting Pipeline (scraping + outreach agent) + Scheduling Infrastructure (self-hosted Cal.com)</div>
+          </div>
+          <div class="timeline-node" onclick="toggleTimeline(this, event)">
+            <span class="timeline-dot"></span>
+            <span class="timeline-label">WK 4</span>
+            <div class="timeline-detail">Week 4: Multichannel Sourcing Dashboard</div>
+          </div>
+          <div class="timeline-node" onclick="toggleTimeline(this, event)">
+            <span class="timeline-dot"></span>
+            <span class="timeline-label">WK 5</span>
+            <div class="timeline-detail">Week 5: Specific Agent Setups</div>
+          </div>
+          <div class="timeline-node" onclick="toggleTimeline(this, event)">
+            <span class="timeline-dot"></span>
+            <span class="timeline-label">WK 6</span>
+            <div class="timeline-detail">Week 6:  AI Defensibility Scoring Tool</div>
+          </div>
+        </div>
+
+        <p class="footnote">→ Of course, this is just a rough overview and this would be subject to fluctuation and change depending on prioritization and duration of completion.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main-wrap -->
+
+<!-- Bottom space invader that walks across screen -->
+<img src="public/space_invaders_icon_136180.png" alt="" class="bottom-invader" aria-hidden="true">
+
+<!-- ========================================
+     FLOATING INVADERS (decorative)
+     ======================================== -->
+<div class="invader" style="top:15%;left:5%;animation-duration:18s;" aria-hidden="true">
+  <div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div>
+  <div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div>
+  <div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px off"></div>
+  <div class="px off"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px off"></div>
+  <div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div>
+</div>
+
+<div class="invader" style="top:55%;right:3%;animation-duration:22s;animation-delay:-6s;" aria-hidden="true">
+  <div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div>
+  <div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div>
+  <div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px off"></div>
+  <div class="px off"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px off"></div>
+  <div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div>
+</div>
+
+<div class="invader" style="top:80%;left:12%;animation-duration:25s;animation-delay:-10s;" aria-hidden="true">
+  <div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div>
+  <div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px off"></div><div class="px off"></div><div class="px off"></div>
+  <div class="px off"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px off"></div>
+  <div class="px off"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px off"></div><div class="px"></div><div class="px"></div><div class="px off"></div>
+  <div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div><div class="px"></div>
+</div>
+
+<!-- ========================================
+     JAVASCRIPT
+     ======================================== -->
+<script>
+/* ----------------------------------------
+   SCORE TRACKER
+   ---------------------------------------- */
+let score = 0;
+function addScore() {
+  score += 100;
+  const el = document.getElementById('score');
+  if (el) el.textContent = String(score).padStart(4, '0');
+}
+
+/* ----------------------------------------
+   SECTION TOGGLE (expand / collapse)
+   ---------------------------------------- */
+function toggleSection(header) {
+  const card = header.parentElement;
+  const wasOpen = card.classList.contains('open');
+  card.classList.toggle('open');
+  if (!wasOpen) addScore();
+}
+
+/* ----------------------------------------
+   SUB-SECTION TOGGLE (nested dropdowns)
+   ---------------------------------------- */
+function toggleSub(header, event) {
+  event.stopPropagation();
+  const sub = header.parentElement;
+  const wasOpen = sub.classList.contains('open');
+  sub.classList.toggle('open');
+  if (!wasOpen) addScore();
+}
+
+/* ----------------------------------------
+   TIMELINE NODE TOGGLE
+   ---------------------------------------- */
+function toggleTimeline(node, event) {
+  event.stopPropagation();
+  const wasActive = node.classList.contains('active');
+  // close all
+  document.querySelectorAll('.timeline-node').forEach(n => n.classList.remove('active'));
+  if (!wasActive) {
+    node.classList.add('active');
+    addScore();
+  }
+}
+
+/* ----------------------------------------
+   SPLASH → BOOT → MAIN REVEAL
+   ---------------------------------------- */
+function startBoot() {
+  // Hide splash
+  document.getElementById('splash').classList.add('hidden');
+
+  // Run boot sequence
+  const bootScreen = document.getElementById('bootScreen');
+  const lines = bootScreen.querySelectorAll('.boot-line');
+  lines.forEach(line => {
+    const delay = parseInt(line.dataset.delay, 10);
+    setTimeout(() => line.classList.add('visible'), delay);
+  });
+
+  // After boot finishes, reveal main interface
+  const lastDelay = parseInt(lines[lines.length - 1].dataset.delay, 10);
+  setTimeout(() => {
+    bootScreen.classList.add('hidden');
+    document.getElementById('navbar').style.display = '';
+    document.getElementById('mainContent').style.display = '';
+    // Fade in main content
+    document.getElementById('mainContent').style.opacity = '0';
+    document.getElementById('mainContent').style.transition = 'opacity 0.6s ease';
+    requestAnimationFrame(() => {
+      document.getElementById('mainContent').style.opacity = '1';
+    });
+  }, lastDelay + 800);
+}
+
+/* ----------------------------------------
+   STARFIELD (canvas particle background)
+   ---------------------------------------- */
+(function initStarfield() {
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+  const COUNT = 60;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  for (let i = 0; i < COUNT; i++) {
+    stars.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.random() * 2 + 1,
+      speed: Math.random() * 0.3 + 0.05,
+      alpha: Math.random() * 0.5 + 0.1
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(s => {
+      ctx.fillStyle = `rgba(0, 255, 65, ${s.alpha})`;
+      ctx.fillRect(Math.floor(s.x), Math.floor(s.y), s.size, s.size);
+      s.y += s.speed;
+      s.alpha += (Math.random() - 0.5) * 0.02;
+      s.alpha = Math.max(0.05, Math.min(0.5, s.alpha));
+      if (s.y > canvas.height) {
+        s.y = -2;
+        s.x = Math.random() * canvas.width;
+      }
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+</body>
+</html>
