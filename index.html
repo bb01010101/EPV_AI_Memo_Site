@@ -566,6 +566,68 @@ body {
 }
 
 /* ========================================
+   GAME SCREEN — classic Space Invaders layout
+   ======================================== */
+.game-screen {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 90;
+  background: #000;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.game-screen.active { display: flex; }
+.game-back-btn {
+  position: absolute;
+  top: 10px; right: 16px;
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--text-dim);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 2px;
+  transition: all 0.2s;
+  text-decoration: none;
+  z-index: 3;
+}
+.game-back-btn:hover { color: var(--green); border-color: var(--green-dark); }
+#gameCanvas {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+.game-overlay {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-family: var(--font-pixel);
+  z-index: 2;
+  pointer-events: none;
+}
+.game-overlay.clickable { pointer-events: auto; cursor: pointer; }
+.game-overlay h2 {
+  font-size: clamp(14px, 3vw, 24px);
+  color: #fff;
+  margin-bottom: 20px;
+}
+.game-overlay p {
+  font-size: clamp(8px, 1.5vw, 12px);
+  color: var(--green);
+  animation: blink-text 1.2s step-end infinite;
+}
+.game-overlay .final-score {
+  font-size: 12px;
+  color: #fff;
+  margin-bottom: 16px;
+  animation: none;
+}
+
+/* ========================================
    RESPONSIVE
    ======================================== */
 @media (max-width: 700px) {
@@ -623,6 +685,7 @@ body {
       <li><a href="#portfolio"><span class="nav-icon"></span>PORTFOLIO</a></li>
       <li><a href="#agents"><span class="nav-icon"></span>AGENTS</a></li>
       <li><a href="#timeline"><span class="nav-icon"></span>TIMELINE</a></li>
+      <li><a href="#" onclick="showGame(event)" style="color:var(--amber);border-color:var(--amber-dim);"><span class="nav-icon" style="border-color:var(--amber);"></span>PLAY</a></li>
     </ul>
     <div class="score-display">SCORE <span id="score">0000</span></div>
   </div>
@@ -832,6 +895,20 @@ body {
 <img src="public/space_invaders_icon_136180.png" alt="" class="bottom-invader" aria-hidden="true">
 
 <!-- ========================================
+     GAME SCREEN — Canvas fills to match classic aspect ratio
+     ======================================== -->
+<div class="game-screen" id="gameScreen">
+  <a class="game-back-btn" onclick="hideGame()">← MEMO</a>
+  <div style="position:relative;">
+    <canvas id="gameCanvas"></canvas>
+    <div class="game-overlay clickable" id="gameOverlay" onclick="startGame()">
+      <h2>EPV INVADERS</h2>
+      <p>[ CLICK TO START ]</p>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================
      FLOATING INVADERS (decorative)
      ======================================== -->
 <div class="invader" style="top:15%;left:5%;animation-duration:18s;" aria-hidden="true">
@@ -935,6 +1012,806 @@ function startBoot() {
       document.getElementById('mainContent').style.opacity = '1';
     });
   }, lastDelay + 800);
+}
+
+/* ----------------------------------------
+   GAME: SHOW / HIDE
+   ---------------------------------------- */
+function showGame(e) {
+  if (e) e.preventDefault();
+  document.getElementById('gameScreen').classList.add('active');
+  document.getElementById('mainContent').style.display = 'none';
+  document.querySelector('.bottom-invader').style.display = 'none';
+  document.querySelectorAll('.invader').forEach(el => el.style.display = 'none');
+  sizeGameCanvas();
+}
+function hideGame() {
+  document.getElementById('gameScreen').classList.remove('active');
+  document.getElementById('mainContent').style.display = '';
+  document.querySelector('.bottom-invader').style.display = '';
+  document.querySelectorAll('.invader').forEach(el => el.style.display = '');
+  if (gameRunning) { gameRunning = false; }
+}
+function sizeGameCanvas() {
+  const c = document.getElementById('gameCanvas');
+  // Classic Space Invaders is ~224x256 logical, we use 448x512 (2x)
+  // Scale to fit viewport
+  const maxW = window.innerWidth - 16;
+  const maxH = window.innerHeight - 16;
+  const ratio = 448 / 512;
+  let w, h;
+  if (maxW / maxH > ratio) { h = maxH; w = h * ratio; }
+  else { w = maxW; h = w / ratio; }
+  c.style.width = Math.floor(w) + 'px';
+  c.style.height = Math.floor(h) + 'px';
+}
+window.addEventListener('resize', () => {
+  if (document.getElementById('gameScreen').classList.contains('active')) sizeGameCanvas();
+});
+
+/* ----------------------------------------
+   GAME: CLASSIC SPACE INVADERS ENGINE
+   ---------------------------------------- */
+const PORTFOLIO_LOGOS = [
+  'epv_portfolio/appetize-1.svg',
+  'epv_portfolio/arena-club.svg',
+  'epv_portfolio/athletes.svg',
+  'epv_portfolio/curastory-2.svg',
+  'epv_portfolio/da.svg',
+  'epv_portfolio/dotla.svg',
+  'epv_portfolio/draftkings.svg',
+  'epv_portfolio/evenplay-1.svg',
+  'epv_portfolio/fitlab.svg',
+  'epv_portfolio/flykitt.svg',
+  'epv_portfolio/forte-acq.svg',
+  'epv_portfolio/gist-2.svg',
+  'epv_portfolio/ida.svg',
+  'epv_portfolio/keemotion-1.svg',
+  'epv_portfolio/kinduct-1.svg',
+  'epv_portfolio/loveb.svg',
+  'epv_portfolio/mojo.svg',
+  'epv_portfolio/movella.svg',
+  'epv_portfolio/oosto-acq.svg',
+  'epv_portfolio/platform_Breakaway.svg',
+  'epv_portfolio/portfolio_canopy.svg',
+  'epv_portfolio/portfolio_Copa90.svg',
+  'epv_portfolio/portfolio_DK.svg',
+  'epv_portfolio/portfolio_Dryvebox_1.svg',
+  'epv_portfolio/portfolio_EL1.svg',
+  'epv_portfolio/portfolio_Fanaply.svg',
+  'epv_portfolio/portfolio_Fittr.svg',
+  'epv_portfolio/portfolio_Freeletics.svg',
+  'epv_portfolio/portfolio_Gamurs.svg',
+  'epv_portfolio/portfolio_greenfly.svg',
+  'epv_portfolio/portfolio_Guidesly.svg',
+  'epv_portfolio/portfolio_Jackpot_1.svg',
+  'epv_portfolio/portfolio_Leagueapps.svg',
+  'epv_portfolio/portfolio_Livelike.svg',
+  'epv_portfolio/portfolio_Oura.svg',
+  'epv_portfolio/portfolio_PFL.svg',
+  'epv_portfolio/portfolio_PlayVS.svg',
+  'epv_portfolio/portfolio_Protecht_1.svg',
+  'epv_portfolio/portfolio_PV.svg',
+  'epv_portfolio/portfolio_RoS.svg',
+  'epv_portfolio/portfolio_Shottracker.svg',
+  'epv_portfolio/portfolio_sportsbox.svg',
+  'epv_portfolio/portfolio_Steezy.svg',
+  'epv_portfolio/portfolio_Till.svg',
+  'epv_portfolio/portfolio_UT.svg',
+  'epv_portfolio/portfolio_wsc_1.svg',
+  'epv_portfolio/sfc.svg',
+  'epv_portfolio/snap-mobile.svg',
+  'epv_portfolio/splash-logo.svg',
+  'epv_portfolio/spoton.svg',
+  'epv_portfolio/ss-1.svg',
+  'epv_portfolio/sw-updated.svg',
+  'epv_portfolio/synergy-1.svg',
+  'epv_portfolio/togethxr.svg',
+  'epv_portfolio/vy-1.svg',
+  'epv_portfolio/arena-acq.svg',
+  'epv_portfolio/esg-logo.png',
+  'epv_portfolio/geocomply-logo.png',
+  'epv_portfolio/657c0878d0992315accd8ed7_FUZE_Vector-Logos-09-1.png',
+  'epv_portfolio/oneplan-logo.png',
+  'epv_portfolio/proshop-logo.png',
+  'epv_portfolio/repurpose-logo.png',
+  'epv_portfolio/sweetspot-logo.png',
+  'epv_portfolio/swish-2023.png',
+  'epv_portfolio/joopiter-logo.png'
+];
+
+let gameRunning = false;
+let gameAnimId = null;
+
+/* ---- Classic Space Invaders alien sprites (pixel bitmaps) ---- */
+// Each alien type: 2 animation frames, drawn as pixel grids
+// Squid (top row): 8x8
+const SQUID = [
+  [ // frame 0
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [1,1,0,1,1,0,1,1],
+    [1,1,1,1,1,1,1,1],
+    [0,0,1,0,0,1,0,0],
+    [0,1,0,1,1,0,1,0],
+    [1,0,1,0,0,1,0,1]
+  ],
+  [ // frame 1
+    [0,0,0,1,1,0,0,0],
+    [0,0,1,1,1,1,0,0],
+    [0,1,1,1,1,1,1,0],
+    [1,1,0,1,1,0,1,1],
+    [1,1,1,1,1,1,1,1],
+    [0,1,0,0,0,0,1,0],
+    [1,0,0,1,1,0,0,1],
+    [0,1,0,0,0,0,1,0]
+  ]
+];
+// Crab (middle rows): 11x8
+const CRAB = [
+  [ // frame 0
+    [0,0,1,0,0,0,0,0,1,0,0],
+    [0,0,0,1,0,0,0,1,0,0,0],
+    [0,0,1,1,1,1,1,1,1,0,0],
+    [0,1,1,0,1,1,1,0,1,1,0],
+    [1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,1,1,1,1,1,1,1,0,1],
+    [1,0,1,0,0,0,0,0,1,0,1],
+    [0,0,0,1,1,0,1,1,0,0,0]
+  ],
+  [ // frame 1
+    [0,0,1,0,0,0,0,0,1,0,0],
+    [1,0,0,1,0,0,0,1,0,0,1],
+    [1,0,1,1,1,1,1,1,1,0,1],
+    [1,1,1,0,1,1,1,0,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1],
+    [0,1,1,1,1,1,1,1,1,1,0],
+    [0,0,1,0,0,0,0,0,1,0,0],
+    [0,1,0,0,0,0,0,0,0,1,0]
+  ]
+];
+// Octopus (bottom rows): 12x8
+const OCTOPUS = [
+  [ // frame 0
+    [0,0,0,0,1,1,1,1,0,0,0,0],
+    [0,1,1,1,1,1,1,1,1,1,1,0],
+    [1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,0,0,1,1,0,0,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1],
+    [0,0,0,1,1,0,0,1,1,0,0,0],
+    [0,0,1,1,0,1,1,0,1,1,0,0],
+    [1,1,0,0,0,0,0,0,0,0,1,1]
+  ],
+  [ // frame 1
+    [0,0,0,0,1,1,1,1,0,0,0,0],
+    [0,1,1,1,1,1,1,1,1,1,1,0],
+    [1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,0,0,1,1,0,0,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1],
+    [0,0,1,1,0,0,0,0,1,1,0,0],
+    [0,1,0,0,1,1,1,1,0,0,1,0],
+    [0,0,1,1,0,0,0,0,1,1,0,0]
+  ]
+];
+
+// Classic cannon (player ship) sprite: 15x8
+const CANNON_SPRITE = [
+  [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,1,1,1,0,0,0,0,0,0],
+  [0,0,0,0,0,0,1,1,1,0,0,0,0,0,0],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+];
+
+// Shield/bunker sprite: 22x16
+const SHIELD_SPRITE = [
+  [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
+  [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+  [0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1],
+  [1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1],
+  [1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1]
+];
+
+// Explosion sprite: 13x8
+const EXPLODE_SPRITE = [
+  [0,0,0,0,0,0,1,0,0,0,0,0,0],
+  [0,1,0,0,1,0,0,0,0,1,0,0,1],
+  [0,0,1,0,0,0,0,0,1,0,0,1,0],
+  [0,0,0,1,0,0,0,0,0,1,0,0,0],
+  [1,1,0,0,0,0,0,0,0,0,0,1,1],
+  [0,0,0,1,0,0,0,0,1,0,0,0,0],
+  [0,0,1,0,0,1,0,0,0,1,0,0,0],
+  [0,1,0,0,1,0,0,1,0,0,0,1,0]
+];
+
+function startGame() {
+  const canvas = document.getElementById('gameCanvas');
+  // Logical resolution: 224x256 (classic), we double to 448x512
+  canvas.width = 448;
+  canvas.height = 512;
+  sizeGameCanvas();
+  const ctx = canvas.getContext('2d');
+  const W = 448;
+  const H = 512;
+  const PX = 2; // pixel scale (1 game pixel = 2 canvas pixels)
+
+  const overlay = document.getElementById('gameOverlay');
+  overlay.style.display = 'none';
+
+  // Load EPV logo for player ship
+  const playerLogoImg = new Image();
+  playerLogoImg.src = 'public/epvlogo.png';
+
+  // Pre-load portfolio logos
+  const logoImages = [];
+  PORTFOLIO_LOGOS.forEach(src => {
+    const img = new Image();
+    img.src = src;
+    logoImages.push(img);
+  });
+
+  // --- GAME STATE ---
+  let gameScore = 0;
+  let hiScore = parseInt(localStorage.getItem('epvInvadersHi') || '0');
+  let lives = 3;
+  let wave = 0; // incremented on first spawn
+  let gameOver = false;
+  let won = false;
+  gameRunning = true;
+  let animFrame = 0; // toggles 0/1 for alien animation
+  let animTimer = 0;
+  let playerHitTimer = 0; // invincibility frames after being hit
+
+  // Movement step system (classic: aliens move one step at a time)
+  let stepTimer = 0;
+  let stepInterval = 45; // frames between alien movement steps
+  const STEP_AMOUNT = 4; // pixels per step (in canvas coords)
+
+  // Player cannon
+  const PLAYER_Y = H - 56;
+  const PLAYER_W = 30; // logical width in canvas coords
+  const PLAYER_H = 16;
+  const player = { x: 30, speed: 3 };
+
+  // Input
+  const keys = {};
+  function onKeyDown(e) {
+    keys[e.key] = true;
+    if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+  }
+  function onKeyUp(e) { keys[e.key] = false; }
+  document.addEventListener('keydown', onKeyDown);
+  document.addEventListener('keyup', onKeyUp);
+
+  // Touch
+  let touchX = null;
+  let touchActive = false;
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    touchX = (e.touches[0].clientX - rect.left) / rect.width * W;
+    touchActive = true;
+  });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    touchX = (e.touches[0].clientX - rect.left) / rect.width * W;
+  });
+  canvas.addEventListener('touchend', () => { touchX = null; touchActive = false; });
+
+  // Player bullet (only 1 on screen at a time, like original)
+  let playerBullet = null;
+  const BULLET_SPEED = 8;
+
+  // Enemy bullets (max 3 on screen like original)
+  let enemyBullets = [];
+  const ENEMY_BULLET_SPEED = 2.5;
+  let enemyShootTimer = 0;
+  let enemyShootInterval = 60; // frames between enemy shots
+
+  // Explosions
+  let explosions = []; // {x, y, timer}
+
+  // Enemies grid: 5 rows x 11 cols
+  const COLS = 11;
+  const ROWS = 5;
+  const ALIEN_CELL_W = 32; // spacing per alien cell
+  const ALIEN_CELL_H = 32;
+  let enemies = []; // {row, col, alive, type, logoImg}
+  let enemyGridX = 0; // top-left of the enemy grid
+  let enemyGridY = 0;
+  let enemyDir = 1; // 1=right, -1=left
+  let shouldDrop = false;
+
+  // Shields (4 bunkers)
+  let shields = []; // array of pixel arrays (mutable)
+  const SHIELD_PX = 2;
+  const SHIELD_W = SHIELD_SPRITE[0].length * SHIELD_PX;
+  const SHIELD_H = SHIELD_SPRITE.length * SHIELD_PX;
+
+  // Mystery ship (UFO)
+  let ufo = null;
+  let ufoTimer = 0;
+  const UFO_INTERVAL = 1200; // frames between potential UFO appearances
+
+  function spawnWave() {
+    wave++;
+    enemies = [];
+    const shuffled = [...logoImages].sort(() => Math.random() - 0.5);
+    let idx = 0;
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        let type; // 0=squid(top), 1=crab(mid), 2=octopus(bottom)
+        if (r === 0) type = 0;
+        else if (r <= 2) type = 1;
+        else type = 2;
+        enemies.push({
+          row: r, col: c, alive: true, type: type,
+          logoImg: shuffled[idx % shuffled.length]
+        });
+        idx++;
+      }
+    }
+    // Position grid
+    enemyGridX = 40;
+    enemyGridY = 76;
+    enemyDir = 1;
+    shouldDrop = false;
+    enemyBullets = [];
+    playerBullet = null;
+
+    // Speed based on wave
+    stepInterval = Math.max(12, 45 - (wave - 1) * 6);
+    enemyShootInterval = Math.max(25, 60 - (wave - 1) * 8);
+    stepTimer = 0;
+
+    // Rebuild shields
+    shields = [];
+    const shieldY = H - 110;
+    const shieldSpacing = (W - 4 * SHIELD_W) / 5;
+    for (let i = 0; i < 4; i++) {
+      const sx = shieldSpacing + i * (SHIELD_W + shieldSpacing);
+      // Deep copy shield pixel data
+      const pixels = SHIELD_SPRITE.map(row => [...row]);
+      shields.push({ x: sx, y: shieldY, pixels: pixels });
+    }
+  }
+  spawnWave();
+
+  // --- Helper: draw a pixel sprite ---
+  function drawSprite(sprite, x, y, px, color) {
+    ctx.fillStyle = color;
+    for (let r = 0; r < sprite.length; r++) {
+      for (let c = 0; c < sprite[r].length; c++) {
+        if (sprite[r][c]) {
+          ctx.fillRect(x + c * px, y + r * px, px, px);
+        }
+      }
+    }
+  }
+
+  // --- Get alien pixel bounds ---
+  function getAlienPos(enemy) {
+    const x = enemyGridX + enemy.col * ALIEN_CELL_W;
+    const y = enemyGridY + enemy.row * ALIEN_CELL_H;
+    let sprite;
+    if (enemy.type === 0) sprite = SQUID[animFrame];
+    else if (enemy.type === 1) sprite = CRAB[animFrame];
+    else sprite = OCTOPUS[animFrame];
+    const w = sprite[0].length * PX;
+    const h = sprite.length * PX;
+    return { x, y, w, h, sprite };
+  }
+
+  function aliveCount() { return enemies.filter(e => e.alive).length; }
+
+  function updateHiScore() {
+    if (gameScore > hiScore) {
+      hiScore = gameScore;
+      localStorage.setItem('epvInvadersHi', String(hiScore));
+    }
+  }
+
+  // --- MAIN GAME LOOP ---
+  function gameLoop() {
+    if (!gameRunning) { cleanup(); return; }
+    if (gameOver) { updateHiScore(); showEndScreen(); cleanup(); return; }
+
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, W, H);
+
+    // ===== HUD (top) =====
+    ctx.font = '14px "Press Start 2P", monospace';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'left';
+    ctx.fillText('SCORE<1>', 16, 20);
+    ctx.textAlign = 'center';
+    ctx.fillText('HI-SCORE', W / 2, 20);
+    // Scores
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(String(gameScore).padStart(4, '0'), 32, 40);
+    ctx.textAlign = 'center';
+    ctx.fillText(String(Math.max(gameScore, hiScore)).padStart(4, '0'), W / 2, 40);
+
+    // ===== PLAYER INPUT =====
+    if (playerHitTimer <= 0) {
+      if (touchX !== null) {
+        const target = touchX - PLAYER_W / 2;
+        player.x += (target - player.x) * 0.15;
+      }
+      if (keys['ArrowLeft'] || keys['a']) player.x -= player.speed;
+      if (keys['ArrowRight'] || keys['d']) player.x += player.speed;
+      player.x = Math.max(16, Math.min(W - PLAYER_W - 16, player.x));
+
+      // Shooting (1 bullet at a time)
+      if ((keys[' '] || keys['ArrowUp'] || keys['w'] || touchActive) && !playerBullet) {
+        playerBullet = { x: player.x + PLAYER_W / 2 - 1, y: PLAYER_Y - 4 };
+      }
+    } else {
+      playerHitTimer--;
+    }
+
+    // ===== UPDATE PLAYER BULLET =====
+    if (playerBullet) {
+      playerBullet.y -= BULLET_SPEED;
+      if (playerBullet.y < 48) playerBullet = null;
+    }
+
+    // ===== ALIEN MOVEMENT (step-based like original) =====
+    stepTimer++;
+    // Speed up as fewer aliens remain
+    const alive = aliveCount();
+    let dynInterval = stepInterval;
+    if (alive <= 5) dynInterval = Math.max(2, stepInterval * 0.2);
+    else if (alive <= 10) dynInterval = Math.max(4, stepInterval * 0.35);
+    else if (alive <= 20) dynInterval = Math.max(6, stepInterval * 0.55);
+    else if (alive <= 35) dynInterval = Math.max(8, stepInterval * 0.75);
+
+    if (stepTimer >= dynInterval) {
+      stepTimer = 0;
+      // Toggle animation
+      animFrame = 1 - animFrame;
+
+      if (shouldDrop) {
+        enemyGridY += 14;
+        enemyDir *= -1;
+        shouldDrop = false;
+      } else {
+        enemyGridX += STEP_AMOUNT * enemyDir;
+        // Check if any alive alien hit edge
+        for (const e of enemies) {
+          if (!e.alive) continue;
+          const pos = getAlienPos(e);
+          if (pos.x <= 10 || pos.x + pos.w >= W - 10) {
+            shouldDrop = true;
+            break;
+          }
+        }
+      }
+    }
+
+    // ===== ENEMY SHOOTING =====
+    enemyShootTimer++;
+    if (enemyShootTimer >= enemyShootInterval && enemyBullets.length < 3) {
+      enemyShootTimer = 0;
+      // Pick a random alive enemy to shoot from (prefer bottom-most in each column)
+      const shooters = [];
+      for (let c = 0; c < COLS; c++) {
+        let bottomEnemy = null;
+        for (let r = ROWS - 1; r >= 0; r--) {
+          const e = enemies[r * COLS + c];
+          if (e.alive) { bottomEnemy = e; break; }
+        }
+        if (bottomEnemy) shooters.push(bottomEnemy);
+      }
+      if (shooters.length > 0) {
+        const shooter = shooters[Math.floor(Math.random() * shooters.length)];
+        const pos = getAlienPos(shooter);
+        // Zigzag or straight bullet types
+        const type = Math.random() < 0.5 ? 'straight' : 'zigzag';
+        enemyBullets.push({
+          x: pos.x + pos.w / 2 - 1,
+          y: pos.y + pos.h,
+          type: type,
+          zigPhase: 0
+        });
+      }
+    }
+
+    // Update enemy bullets
+    enemyBullets = enemyBullets.filter(b => {
+      b.y += ENEMY_BULLET_SPEED;
+      if (b.type === 'zigzag') {
+        b.zigPhase += 0.15;
+        b.x += Math.sin(b.zigPhase) * 0.8;
+      }
+      return b.y < H;
+    });
+
+    // ===== UFO =====
+    ufoTimer++;
+    if (!ufo && ufoTimer > UFO_INTERVAL && Math.random() < 0.01) {
+      ufoTimer = 0;
+      ufo = { x: -40, y: 52, dir: 1 };
+      if (Math.random() < 0.5) { ufo.x = W + 40; ufo.dir = -1; }
+    }
+    if (ufo) {
+      ufo.x += ufo.dir * 1.5;
+      if (ufo.x < -50 || ufo.x > W + 50) ufo = null;
+    }
+
+    // ===== COLLISIONS =====
+
+    // Player bullet vs aliens
+    if (playerBullet) {
+      for (const e of enemies) {
+        if (!e.alive) continue;
+        const pos = getAlienPos(e);
+        if (playerBullet.x >= pos.x && playerBullet.x <= pos.x + pos.w &&
+            playerBullet.y >= pos.y && playerBullet.y <= pos.y + pos.h) {
+          e.alive = false;
+          explosions.push({ x: pos.x, y: pos.y, timer: 12 });
+          // Score: squid=30, crab=20, octopus=10 (classic scoring)
+          const pts = e.type === 0 ? 30 : e.type === 1 ? 20 : 10;
+          gameScore += pts;
+          playerBullet = null;
+          break;
+        }
+      }
+    }
+
+    // Player bullet vs UFO
+    if (playerBullet && ufo) {
+      if (playerBullet.x >= ufo.x && playerBullet.x <= ufo.x + 32 &&
+          playerBullet.y >= ufo.y && playerBullet.y <= ufo.y + 14) {
+        const ufoPoints = [50, 100, 150, 300][Math.floor(Math.random() * 4)];
+        gameScore += ufoPoints;
+        explosions.push({ x: ufo.x, y: ufo.y, timer: 20, text: String(ufoPoints) });
+        ufo = null;
+        playerBullet = null;
+      }
+    }
+
+    // Player bullet vs shields
+    if (playerBullet) {
+      for (const sh of shields) {
+        const lx = playerBullet.x - sh.x;
+        const ly = playerBullet.y - sh.y;
+        const pc = Math.floor(lx / SHIELD_PX);
+        const pr = Math.floor(ly / SHIELD_PX);
+        if (pr >= 0 && pr < sh.pixels.length && pc >= 0 && pc < sh.pixels[0].length && sh.pixels[pr][pc]) {
+          // Destroy a chunk
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              const rr = pr + dr, cc = pc + dc;
+              if (rr >= 0 && rr < sh.pixels.length && cc >= 0 && cc < sh.pixels[0].length) {
+                sh.pixels[rr][cc] = 0;
+              }
+            }
+          }
+          playerBullet = null;
+          break;
+        }
+      }
+    }
+
+    // Enemy bullets vs shields
+    enemyBullets.forEach(b => {
+      for (const sh of shields) {
+        const lx = b.x - sh.x;
+        const ly = b.y - sh.y;
+        const pc = Math.floor(lx / SHIELD_PX);
+        const pr = Math.floor(ly / SHIELD_PX);
+        if (pr >= 0 && pr < sh.pixels.length && pc >= 0 && pc < sh.pixels[0].length && sh.pixels[pr][pc]) {
+          for (let dr = -1; dr <= 2; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              const rr = pr + dr, cc = pc + dc;
+              if (rr >= 0 && rr < sh.pixels.length && cc >= 0 && cc < sh.pixels[0].length) {
+                sh.pixels[rr][cc] = 0;
+              }
+            }
+          }
+          b.y = H + 10; // remove
+          return;
+        }
+      }
+    });
+
+    // Enemy bullets vs player
+    if (playerHitTimer <= 0) {
+      enemyBullets.forEach(b => {
+        if (b.x >= player.x && b.x <= player.x + PLAYER_W &&
+            b.y >= PLAYER_Y && b.y <= PLAYER_Y + PLAYER_H) {
+          b.y = H + 10;
+          lives--;
+          playerHitTimer = 90; // brief invincibility
+          explosions.push({ x: player.x, y: PLAYER_Y, timer: 20 });
+          if (lives <= 0) gameOver = true;
+        }
+      });
+    }
+
+    // Aliens reaching shield/player row
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      const pos = getAlienPos(e);
+      if (pos.y + pos.h >= PLAYER_Y) { gameOver = true; break; }
+    }
+
+    // Wave clear
+    if (alive === 0 && !gameOver) {
+      if (wave >= 4) { won = true; gameOver = true; }
+      else { spawnWave(); }
+    }
+
+    // ===== DRAW =====
+
+    // Draw shields
+    shields.forEach(sh => {
+      ctx.fillStyle = '#00ff41';
+      for (let r = 0; r < sh.pixels.length; r++) {
+        for (let c = 0; c < sh.pixels[r].length; c++) {
+          if (sh.pixels[r][c]) {
+            ctx.fillRect(sh.x + c * SHIELD_PX, sh.y + r * SHIELD_PX, SHIELD_PX, SHIELD_PX);
+          }
+        }
+      }
+    });
+
+    // Draw aliens
+    enemies.forEach(e => {
+      if (!e.alive) return;
+      const pos = getAlienPos(e);
+      // Draw the classic pixel alien shape
+      const color = e.type === 0 ? '#fff' : e.type === 1 ? '#fff' : '#fff';
+      drawSprite(pos.sprite, pos.x, pos.y, PX, color);
+      // Overlay portfolio logo (small, semi-transparent, centered)
+      if (e.logoImg && e.logoImg.complete && e.logoImg.naturalWidth > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.45;
+        const logoSize = Math.min(pos.w, pos.h) * 0.6;
+        const lx = pos.x + (pos.w - logoSize) / 2;
+        const ly = pos.y + (pos.h - logoSize) / 2;
+        ctx.filter = 'brightness(0) invert(1)';
+        ctx.drawImage(e.logoImg, lx, ly, logoSize, logoSize);
+        ctx.filter = 'none';
+        ctx.restore();
+      }
+    });
+
+    // Draw explosions
+    explosions = explosions.filter(ex => {
+      ex.timer--;
+      if (ex.text) {
+        // Score popup
+        ctx.font = '10px "Press Start 2P", monospace';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.fillText(ex.text, ex.x + 16, ex.y + 8);
+      } else {
+        drawSprite(EXPLODE_SPRITE, ex.x, ex.y, PX, '#fff');
+      }
+      return ex.timer > 0;
+    });
+
+    // Draw UFO
+    if (ufo) {
+      ctx.fillStyle = '#ff0000';
+      // Simple UFO shape
+      ctx.fillRect(ufo.x + 10, ufo.y, 12, 3);
+      ctx.fillRect(ufo.x + 6, ufo.y + 3, 20, 3);
+      ctx.fillRect(ufo.x + 2, ufo.y + 6, 28, 3);
+      ctx.fillRect(ufo.x, ufo.y + 9, 32, 3);
+      ctx.fillRect(ufo.x + 4, ufo.y + 12, 6, 2);
+      ctx.fillRect(ufo.x + 22, ufo.y + 12, 6, 2);
+    }
+
+    // Draw player bullet
+    if (playerBullet) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(playerBullet.x, playerBullet.y, 2, 8);
+    }
+
+    // Draw enemy bullets (classic shapes)
+    ctx.fillStyle = '#fff';
+    enemyBullets.forEach(b => {
+      if (b.type === 'zigzag') {
+        // Lightning bolt shape
+        ctx.fillRect(b.x, b.y, 2, 2);
+        ctx.fillRect(b.x + 1, b.y + 2, 2, 2);
+        ctx.fillRect(b.x, b.y + 4, 2, 2);
+        ctx.fillRect(b.x + 1, b.y + 6, 2, 2);
+      } else {
+        // Straight plunger
+        ctx.fillRect(b.x, b.y, 2, 3);
+        ctx.fillRect(b.x - 1, b.y + 3, 4, 1);
+        ctx.fillRect(b.x, b.y + 4, 2, 3);
+      }
+    });
+
+    // Draw player cannon
+    if (playerHitTimer <= 0 || Math.floor(playerHitTimer / 4) % 2 === 0) {
+      // Draw classic cannon sprite in green
+      drawSprite(CANNON_SPRITE, player.x, PLAYER_Y, PX, '#00ff41');
+      // Overlay small EPV logo on cannon body
+      if (playerLogoImg.complete && playerLogoImg.naturalWidth > 0) {
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.filter = 'brightness(0) saturate(100%) invert(70%) sepia(90%) saturate(600%) hue-rotate(85deg) brightness(1.1)';
+        ctx.drawImage(playerLogoImg, player.x + 5, PLAYER_Y + 4, 20, 10);
+        ctx.filter = 'none';
+        ctx.restore();
+      }
+    }
+
+    // ===== BOTTOM BAR (classic) =====
+    // Green line
+    ctx.fillStyle = '#00ff41';
+    ctx.fillRect(12, H - 36, W - 24, 1);
+
+    // Lives: draw mini cannon icons
+    ctx.font = '12px "Press Start 2P", monospace';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'left';
+    ctx.fillText(String(lives), 20, H - 16);
+    for (let i = 0; i < lives - 1; i++) {
+      drawSprite(CANNON_SPRITE, 50 + i * 36, H - 28, 1.4, '#00ff41');
+    }
+
+    // Credit
+    ctx.font = '12px "Press Start 2P", monospace';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'right';
+    ctx.fillText('CREDIT 00', W - 16, H - 16);
+
+    // Wave indicator (subtle)
+    ctx.font = '10px "Press Start 2P", monospace';
+    ctx.fillStyle = '#444';
+    ctx.textAlign = 'center';
+    ctx.fillText('WAVE ' + wave, W / 2, H - 16);
+
+    gameAnimId = requestAnimationFrame(gameLoop);
+  }
+
+  function showEndScreen() {
+    updateHiScore();
+    const overlay = document.getElementById('gameOverlay');
+    overlay.style.display = '';
+    overlay.classList.add('clickable');
+    if (won) {
+      overlay.innerHTML = '<h2 style="color:#00ff41;">PORTFOLIO CLEARED!</h2>' +
+        '<p class="final-score">SCORE: ' + gameScore + '</p>' +
+        '<p>[ CLICK TO PLAY AGAIN ]</p>';
+    } else {
+      overlay.innerHTML = '<h2 style="color:#ff0000;">GAME OVER</h2>' +
+        '<p class="final-score">SCORE: ' + gameScore + '</p>' +
+        '<p>[ CLICK TO PLAY AGAIN ]</p>';
+    }
+  }
+
+  function cleanup() {
+    document.removeEventListener('keydown', onKeyDown);
+    document.removeEventListener('keyup', onKeyUp);
+    if (gameAnimId) cancelAnimationFrame(gameAnimId);
+  }
+
+  gameLoop();
 }
 
 /* ----------------------------------------
