@@ -642,6 +642,27 @@ body {
 /* ========================================
    RESPONSIVE
    ======================================== */
+/* Mobile play button — always visible on small screens */
+.mobile-play-btn {
+  display: none;
+}
+@media (max-width: 700px) {
+  .mobile-play-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    color: var(--amber);
+    text-decoration: none;
+    padding: 5px 10px;
+    border: 1px solid var(--amber-dim);
+    border-radius: 2px;
+    cursor: pointer;
+    text-shadow: 0 0 8px var(--amber-dim);
+  }
+}
+
 @media (max-width: 700px) {
   .main-wrap { margin: 64px 8px 100px; padding: 16px 10px; }
   .nav-links { display: none; }
@@ -705,6 +726,7 @@ body {
       <li><a href="#" onclick="showComingSoon(event, 'SETTINGS')"><span class="nav-icon"></span>SETTINGS</a></li>
       <li><a href="#" onclick="showGame(event)" style="color:var(--amber);border-color:var(--amber-dim);"><span class="nav-icon" style="border-color:var(--amber);"></span>PLAY</a></li>
     </ul>
+    <a class="mobile-play-btn" onclick="showGame(event)">▶ PLAY</a>
     <div class="score-display">SCORE <span id="score">0000</span></div>
   </div>
 </nav>
@@ -945,9 +967,7 @@ function addScore() {
    ---------------------------------------- */
 function toggleSection(header) {
   const card = header.parentElement;
-  const wasOpen = card.classList.contains('open');
   card.classList.toggle('open');
-  if (!wasOpen) addScore();
 }
 
 /* ----------------------------------------
@@ -956,9 +976,7 @@ function toggleSection(header) {
 function toggleSub(header, event) {
   event.stopPropagation();
   const sub = header.parentElement;
-  const wasOpen = sub.classList.contains('open');
   sub.classList.toggle('open');
-  if (!wasOpen) addScore();
 }
 
 /* ----------------------------------------
@@ -978,7 +996,6 @@ function navToSection(e, id) {
   if (card) {
     if (!card.classList.contains('open')) {
       card.classList.add('open');
-      addScore();
     }
     // Scroll into view after a brief delay for layout
     setTimeout(() => {
@@ -997,7 +1014,6 @@ function toggleTimeline(node, event) {
   document.querySelectorAll('.timeline-node').forEach(n => n.classList.remove('active'));
   if (!wasActive) {
     node.classList.add('active');
-    addScore();
   }
 }
 
@@ -1589,6 +1605,7 @@ function startGame() {
           // Score: squid=30, crab=20, octopus=10 (classic scoring)
           const pts = e.type === 0 ? 30 : e.type === 1 ? 20 : 10;
           gameScore += pts;
+          syncScore(gameScore);
           playerBullet = null;
           break;
         }
@@ -1601,6 +1618,7 @@ function startGame() {
           playerBullet.y >= ufo.y && playerBullet.y <= ufo.y + 14) {
         const ufoPoints = [50, 100, 150, 300][Math.floor(Math.random() * 4)];
         gameScore += ufoPoints;
+        syncScore(gameScore);
         explosions.push({ x: ufo.x, y: ufo.y, timer: 20, text: String(ufoPoints) });
         ufo = null;
         playerBullet = null;
